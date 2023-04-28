@@ -5,6 +5,8 @@ in vec3 color;
 in vec2 texCoord;
 in float distance;
 
+#define DISPLAY_FOG true
+
 layout (std140) uniform Camera {
     mat4 viewMatrix;
     mat4 projMatrix;
@@ -21,7 +23,7 @@ void main()
 {
     float depth = (distance - near) / far;
 
-    if(depth > fog_start) {
+    if(depth > fog_start && DISPLAY_FOG) {
         FragColor = texture(atlas, texCoord) * vec4(color, 
         -depth / (fog_end - fog_start) + fog_start / (fog_end - fog_start) + 1.0);
     }

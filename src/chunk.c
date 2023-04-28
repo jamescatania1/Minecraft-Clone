@@ -6,6 +6,7 @@
 #include "chunk.h"
 #include "atlas.h"
 #include "math/noise.h"
+#include "main.h"
 
 #define LIGHT_AMT_TOP 1.0
 #define LIGHT_AMT_BOTTOM 0.6
@@ -13,6 +14,7 @@
 #define LIGHT_AMT_BACK 0.6
 #define LIGHT_AMT_RIGHT 0.7
 #define LIGHT_AMT_LEFT 0.9
+#define DEBUG_COLOR_CHUNK_BORDERS 0
 
 unsigned int createCube();
 Chunk new_Chunk() {
@@ -34,11 +36,13 @@ Chunk new_Chunk() {
 }
 
 void Chunk_free(Chunk chunk) {
+	if (!chunk) return;
+	//printf("(% d, % d)\n", chunk->posX, chunk->posZ);
+	//if (!chunk->setMesh) printf("mesh not set (%d, %d)\n", chunk->posX, chunk->posZ);
 	//unbind VAO, VBO, and EBO
 	glBindVertexArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
 	//delete VAO, VBO, and EBO
 	glDeleteVertexArrays(1, &chunk->renderer->VAO);
 	glDeleteBuffers(1, &chunk->renderer->VBO);
@@ -66,16 +70,23 @@ int Chunk_hash_pos(int x, int z) {
 
 Chunk Chunk_generate(int xPos, int zPos) {
 	Chunk chunk = new_Chunk();
-
+	if (!chunk) {
+		printf("Couldn't generate chunk\n");
+		return NULL;
+	}
 	chunk->posX = xPos;
 	chunk->posZ = zPos;
 	chunk->renderer->transform->position->x = 16.0f * (float)xPos;
 	chunk->renderer->transform->position->z = 16.0f * (float)zPos;
 	RenderComponent_updatetransformmatrix(chunk->renderer);
 
+	double baseHeight = 40.0;
+	double amplitude = 60.0;
+	double freq = 0.0075;
+
 	for (int x = 0; x < 16; x++) {
 		for (int z = 0; z < 16; z++) {
-			int height = (int)((double)30.0 * octaveNoise(((double)x + 16.0 * (double)xPos) / 60.0, ((double)z + 16.0 * (double)zPos) / 60.0) + (double)50.0);
+			int height = (int)((double)amplitude * octaveNoise(((double)x + 16.0 * (double)xPos) * freq, ((double)z + 16.0 * (double)zPos) * freq) + baseHeight);
 			//printf("%d\n", height);
 			for (int y = 0; y < 256; y++) {
 				if (y < height - 10) {
@@ -90,18 +101,21 @@ Chunk Chunk_generate(int xPos, int zPos) {
 			}
 		}
 	}
-
 	return chunk;
 }
 
 void Chunk_updatemesh(Chunk chunk, Chunk neighboringData[4]) {
-	chunk->setMesh = 1;
 	int blockCt = 0;
 	int faceCt = 0;
 	for (int x = 0; x < 16; x++) {
 		for (int z = 0; z < 16; z++) {
 			for (int y = 0; y < 256; y++) {
-				if (!(int)chunk->data[x][z][y]) continue;
+				if (!(int)chunk->data[x][z][y]) {
+					if (y == 63) { //water face
+						faceCt++;
+					}
+					continue;
+				}
 				blockCt++;
 				faceCt += 6;
 				if (x > 0 && (int)chunk->data[x - 1][z][y] || x == 0 && (int)neighboringData[0]->data[15][z][y]) faceCt--;
@@ -117,6 +131,8 @@ void Chunk_updatemesh(Chunk chunk, Chunk neighboringData[4]) {
 	unsigned int* indices = (unsigned int*)malloc(faceCt * 6 * sizeof(unsigned int)); //6 indicies per face
 	int block = 0;
 	int face = 0;
+
+	//generate main opaque blocks
 	for (int x = 0; x < 16; x++) {
 		for (int z = 0; z < 16; z++) {
 			for (int y = 0; y < 256; y++) {
@@ -125,10 +141,7 @@ void Chunk_updatemesh(Chunk chunk, Chunk neighboringData[4]) {
 				float _x = (float)x; float _y = (float)y; float _z = (float)z;
 
 				//vertex colors
-				float colX = (float)rand() / (float)RAND_MAX;
-				float colY = (float)rand() / (float)RAND_MAX;
-				float colZ = (float)rand() / (float)RAND_MAX;
-
+				float colX, colY, colZ;
 				colX = colY = colZ = 1.0f;
 
 				int i = face * 6;
@@ -141,6 +154,12 @@ void Chunk_updatemesh(Chunk chunk, Chunk neighboringData[4]) {
 						vertices[v + k * 8 + 3] = LIGHT_AMT_TOP * colX;
 						vertices[v + k * 8 + 4] = LIGHT_AMT_TOP * colY;
 						vertices[v + k * 8 + 5] = LIGHT_AMT_TOP * colZ;
+
+						if (DEBUG_COLOR_CHUNK_BORDERS && (x == 0 || x == 15 || z == 0 || z == 15)) {
+							vertices[v + k * 8 + 3] = 0.0;
+							vertices[v + k * 8 + 4] = 0.0;
+							vertices[v + k * 8 + 5] = 0.0;
+						}
 
 						//tex coordinates
 						vertices[v + k * 8 + 6] = texCoords[k * 2];
@@ -294,6 +313,48 @@ void Chunk_updatemesh(Chunk chunk, Chunk neighboringData[4]) {
 			}
 		}
 	}
+
+	//generate water faces
+	for (int x = 0; x < 16; x++) {
+		for (int z = 0; z < 16; z++) {
+			if (chunk->data[x][z][63]) continue;
+			float _x = (float)x; float _y = 63.0; float _z = (float)z;
+
+			//vertex colors
+			float colX, colY, colZ;
+			colX = colY = colZ = 1.0f;
+
+			int i = face * 6;
+			int v = face * 32;
+			int vertex = face * 4;
+
+			float* texCoords = TextureAtlas_getFaceCoords(BLOCK_WATER, BLOCKFACE_TOP);
+			for (int k = 0; k < 4; k++) {
+				//color
+				vertices[v + k * 8 + 3] = LIGHT_AMT_TOP * colX;
+				vertices[v + k * 8 + 4] = LIGHT_AMT_TOP * colY;
+				vertices[v + k * 8 + 5] = LIGHT_AMT_TOP * colZ;
+
+				//tex coordinates
+				vertices[v + k * 8 + 6] = texCoords[k * 2];
+				vertices[v + k * 8 + 7] = texCoords[k * 2 + 1];
+			}
+			free(texCoords);
+
+			vertices[v + 0] = _x - 0.5f; vertices[v + 1] = _y + 0.45f; vertices[v + 2] = _z + 0.5f;
+			vertices[v + 8] = _x + 0.5f; vertices[v + 9] = _y + 0.45f; vertices[v + 10] = _z + 0.5f;
+			vertices[v + 16] = _x + 0.5f; vertices[v + 17] = _y + 0.45f; vertices[v + 18] = _z - 0.5f;
+			vertices[v + 24] = _x - 0.5f; vertices[v + 25] = _y + 0.45f; vertices[v + 26] = _z - 0.5f;
+
+			indices[i + 0] = vertex + 0; indices[i + 1] = vertex + 1; indices[i + 2] = vertex + 2;
+			indices[i + 3] = vertex + 0; indices[i + 4] = vertex + 2; indices[i + 5] = vertex + 3;
+			i += 6;
+			v += 32;
+			vertex += 4;
+			face++;
+		}
+	}
+
 	unsigned int VBO;
 	glGenBuffers(1, &VBO);
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
@@ -320,7 +381,9 @@ void Chunk_updatemesh(Chunk chunk, Chunk neighboringData[4]) {
 
 	free(vertices);
 	free(indices);
+	chunk->setMesh = 1;
 }
+
 unsigned int createCube() {
 	unsigned int result = 0;
 
@@ -337,7 +400,6 @@ unsigned int createCube() {
 		 0.5f,  0.5f, -0.5f,  0.0f, 0.0f, 1.0f,  0.0f, 0.0f,
 	};
 	unsigned int indices[] = {
-
 		//Right
 		1, 3, 7,
 		1, 5, 7,

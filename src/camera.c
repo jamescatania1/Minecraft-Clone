@@ -9,6 +9,7 @@
 #include "math/mathutil.h"
 #include "input.h"
 
+#define ZFAR_OFFSET 30.0
 #define PREFERRED_ASPECT_WIDTH 16
 #define PREFERRED_ASPECT_HEIGHT 9
 #define ROTATE_INTERP_SPEED 1.1
@@ -57,9 +58,9 @@ void Camera_UpdateMatrix() {
 	float t = 1.0f / tanf(camera->fov / 2.0f);
 	projMatrix->data[0][0] = t / aspect;
 	projMatrix->data[1][1] = t / aspect;
-	projMatrix->data[2][2] = (camera->zFar + camera->zNear) / (camera->zNear - camera->zFar);
+	projMatrix->data[2][2] = (camera->zFar + ZFAR_OFFSET + camera->zNear) / (camera->zNear - camera->zFar - ZFAR_OFFSET);
 	projMatrix->data[2][3] = -1.0f;
-	projMatrix->data[3][2] = (2.0f * camera->zFar * camera->zNear) / (camera->zNear - camera->zFar);
+	projMatrix->data[3][2] = (2.0f * (ZFAR_OFFSET + camera->zFar) * camera->zNear) / (camera->zNear - camera->zFar - ZFAR_OFFSET);
 
 	Mat4x4_free(camera->viewMatrix);
 	camera->viewMatrix = viewMatrix;

@@ -2,11 +2,11 @@
 #define _noise_h
 
 typedef struct PerlinNoise {
-	int key;
+	char key[256];
 	int p[512];
 } *PerlinNoise;
 
-extern PerlinNoise new_PerlinNoise(int key);
+extern PerlinNoise new_PerlinNoise(char key[256]);
 
 extern void PerlinNoise_free(PerlinNoise noise);
 
@@ -15,7 +15,8 @@ extern double perlinNoise(PerlinNoise noise, double x, double y);
 
 
 typedef struct OctaveNoise {
-	int key;
+	unsigned int seed;
+	char* key;
 	PerlinNoise* octaves;
 	int octaveCt;
 
@@ -27,10 +28,10 @@ typedef struct OctaveNoise {
 } *OctaveNoise;
 
 //Common value for ampOctaveMultiplier : 0.5; Common value for freqOctaveMultiplier : 2.0
-OctaveNoise OctaveNoise_set(int key, int octaveCt, double ampOctaveMultiplier, double freqOctaveMultiplier);
+extern OctaveNoise OctaveNoise_set(unsigned int seed, int octaveCt, double ampOctaveMultiplier, double freqOctaveMultiplier);
 
-void OctaveNoise_free(OctaveNoise noise);
+extern void OctaveNoise_free(OctaveNoise noise);
 
-double octaveNoise(double x, double y);
+extern double octaveNoise(double x, double y);
 
 #endif

@@ -2,19 +2,24 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include "linkedlist.h"
 #include "list.h"
 
 void List_resizedouble(List list);
 
 List new_List() {
 	List this = (List)malloc(sizeof(struct List));
-	if (this == NULL) return NULL;
+	if (!this) return NULL;
 
 	this->capacity = 10;
 	this->count = 0;
 	this->activeCount = 0;
+
 	this->data = (void**)malloc(this->capacity * sizeof(void*));
-	for (int i = 0; i < this->capacity; i++) this->data[i] = NULL;
+	if (!this->data) return NULL;
+	for (int i = 0; i < this->capacity; i++) {
+		this->data[i] = NULL;
+	}
 	return this;
 }
 
@@ -24,6 +29,7 @@ void List_free(List list) {
 }
 
 void List_freeAll(List list, void (*free_fct)(void* ptr)) {
+	if (!list) return;
 	for (int i = 0; i < list->count; i++) {
 		if (List_get(list, i)) {
 			free_fct(List_get(list, i));
@@ -37,9 +43,9 @@ void List_freeAll(List list, void (*free_fct)(void* ptr)) {
 void* List_get(List list, int index) {
 	if (index >= list->capacity || index < 0) {
 		printf("List error: index out of bounds\n");
-		exit(EXIT_FAILURE);
+		return NULL;
 	}
-	if (list->data[index] == NULL) {
+	if (!list->data[index]) {
 		return NULL;
 	}
 	return list->data[index];
@@ -51,7 +57,7 @@ void List_insert(List list, void* data, int index) {
 	}
 	if (index >= list->count || index < 0) {
 		printf("List error: index out of bounds\n");
-		exit(EXIT_FAILURE);
+		return;
 	}
 	for (int i = list->count - 1; i >= index; i--) {
 		list->data[i + 1] = list->data[i];
@@ -65,24 +71,32 @@ void List_insert(List list, void* data, int index) {
 void List_remove(List list, int index) {
 	if (index >= list->capacity || index < 0) {
 		printf("List error: index out of bounds\n");
-		exit(EXIT_FAILURE);
+		return;
 	}
 	if (list->data[index]) {
 		list->data[index] = NULL;
+		for (int i = index + 1; i < list->count; i++) {
+			list->data[i - 1] = list->data[i];
+		}
+		list->data[list->count - 1] = NULL;
 		list->activeCount--;
+		list->count--;
 	}
 }
 
 void List_set(List list, void* data, int index) {
 	if (index > list->count || index < 0) {
 		printf("List error: index out of bounds\n");
-		exit(EXIT_FAILURE);
+		return;
 	}
 	else if (index == list->count) {
 		List_add(list, data);
 		return;
 	}
-	if (!list->data[index]) list->activeCount++;
+	if (!list->data[index]) {
+		if (data) list->activeCount++;
+	}
+	else if (!data) list->activeCount--;
 	list->data[index] = data;
 }
 
@@ -98,7 +112,7 @@ void List_add(List list, void* data) {
 void* List_getfirst(List list) {
 	if (list->count == 0) {
 		printf("List error: list is empty\n");
-		exit(EXIT_FAILURE);
+		return NULL;
 	}
 	return list->data[0];
 }
@@ -106,20 +120,24 @@ void* List_getfirst(List list) {
 void* List_getlast(List list) {
 	if (list->count == 0) {
 		printf("List error: list is empty\n");
-		exit(EXIT_FAILURE);
+		return NULL;
 	}
 	return list->data[list->count - 1];
 }
 
 void List_resizedouble(List list) {
 	void** newData = (void**)malloc(list->capacity * 2 * sizeof(void*));
-	if (newData == NULL) {
+	if (!newData) {
 		printf("List error: could not resize list to capacity %d\n", list->capacity);
-		exit(EXIT_FAILURE);
+		return;
 	}
 	for (int i = 0; i < list->capacity * 2; i++) {
-		if (i < list->capacity) newData[i] = list->data[i];
-		else newData[i] = NULL;
+		if (i < list->capacity) {
+			newData[i] = list->data[i];
+		}
+		else {
+			newData[i] = NULL;
+		}
 	}
 	list->capacity *= 2;
 	free(list->data);

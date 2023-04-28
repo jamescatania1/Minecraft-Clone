@@ -55,9 +55,9 @@ void HashMap_free_all(HashMap map, void (*free_fct)(void*)) {
 
 
 void HashMap_insert(HashMap map, int (*hash_fct)(void*), void* value) {
-	if (!value) {
-		printf("HashMap error: null key.\n"); return;
-	}
+	//if (!value) {
+	//	printf("HashMap error: null key.\n"); return;
+	//}
 	int key = hash_fct(value);
 	int hashVal = key % map->capacity;
 	if (hashVal < 0) hashVal += map->capacity;
@@ -69,9 +69,9 @@ void HashMap_insert(HashMap map, int (*hash_fct)(void*), void* value) {
 }
 
 void HashMap_insert_at(HashMap map, int key, void* value) {
-	if (!value) {
-		printf("HashMap error: null key.\n"); return;
-	}
+	//if (!value) {
+	//	printf("HashMap error: null key.\n"); return;
+	//}
 	int hashVal = key % map->capacity;
 	if (hashVal < 0) hashVal += map->capacity;
 	HashMapNode node = new_HashMapNode(key, value);
@@ -92,7 +92,14 @@ void* HashMap_get(HashMap map, int key) {
 }
 
 int HashMap_containsKey(HashMap map, int key) {
-	return HashMap_get(map, key) != 0;
+	int hashVal = key % map->capacity;
+	if (hashVal < 0) hashVal += map->capacity;
+	HashMapNode node = map->buckets[hashVal];
+	while (node) {
+		if (node->key == key) return 1;
+		node = node->next;
+	}
+	return 0;
 }
 
 void HashMap_remove(HashMap map, int key) {

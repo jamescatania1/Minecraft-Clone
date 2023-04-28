@@ -8,6 +8,7 @@
 #define BLOCK_GRASS 1
 #define BLOCK_DIRT 2
 #define BLOCK_STONE 3
+#define BLOCK_WATER 4
 
 typedef struct Chunk {
 	int cull;

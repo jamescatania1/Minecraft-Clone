@@ -3,6 +3,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <time.h>
 #include "noise.h"
 
 double lerp(double t, double a, double b);
@@ -26,12 +27,11 @@ static int permutation[] = { 151,160,137,91,90,15,
 	138,236,205,93,222,114,67,29,24,72,243,141,128,195,78,66,215,61,156,180
 };
 
-PerlinNoise new_PerlinNoise(int key) {
+PerlinNoise new_PerlinNoise(char key[256]) {
 	PerlinNoise this = (PerlinNoise)malloc(sizeof(struct PerlinNoise));
-
-	this->key = key;
 	for (int i = 0; i < 256; i++) {
-		this->p[i] = permutation[i];
+		this->key[i] = key[i];
+		this->p[i] = permutation[(int)key[i] + 128];
 		this->p[256 + i] = this->p[i];
 	}
 	return this;
@@ -87,16 +87,53 @@ double grad(int hash, double x, double y) {
 
 // Octave noise
 
+char* OctaveNoise_key_generate(unsigned int seed) {
+	srand(seed);
+	int key[256];
+	char* result = (char*)malloc(256 * sizeof(char));
+	for (int i = 0; i < 256; i++) key[i] = -1;
+	for (int i = 0; i < 256; i++) {
+		while (key[i] == -1) {
+			int val = rand() % 256;
+			int foundVal = 0;
+			for (int j = 0; j < 256; j++) {
+				if (key[j] == val) {
+					foundVal = 1;
+					break;
+				}
+			}
+			if (!foundVal) key[i] = val;
+		}
+		result[i] = (char)key[i];
+	}
+	//printf("Seed: %u\n", seed);
+	//printf("%s\n", result);
+	return result;
+}
+
 //updates active octave noise and returns the object
-OctaveNoise OctaveNoise_set(int key, int octaveCt, double ampOctaveMultiplier, double freqOctaveMultiplier) {
+OctaveNoise OctaveNoise_set(unsigned int seed, int octaveCt, double ampOctaveMultiplier, double freqOctaveMultiplier) {
 	OctaveNoise this = (OctaveNoise)malloc(sizeof(struct OctaveNoise));
-	this->key = key;
+	if (!seed) { //generate random seed
+		srand(time(NULL));
+		unsigned int genseed = 0;
+		for (int i = 0; i < 9; i++) {
+			genseed *= 10;
+			genseed += rand() % 10;
+		}
+		genseed *= 10;
+		genseed += rand() % 4;
+		this->seed = genseed;
+	}
+	else this->seed = seed;
+
+	this->key = OctaveNoise_key_generate(this->seed);
 	this->octaveCt = octaveCt;
 	this->ampOctaveMultiplier = ampOctaveMultiplier;
 	this->freqOctaveMultiplier = freqOctaveMultiplier;
 	this->octaves = (PerlinNoise*)malloc(octaveCt * sizeof(PerlinNoise));
 	for (int i = 0; i < octaveCt; i++) {
-		this->octaves[i] = new_PerlinNoise(key);
+		this->octaves[i] = new_PerlinNoise(this->key);
 	}
 	activeNoise = this;
 	return this;
@@ -107,6 +144,7 @@ void OctaveNoise_free(OctaveNoise noise) {
 		PerlinNoise_free(noise->octaves[i]);
 	}
 	free(noise->octaves);
+	free(noise->key);
 	free(noise);
 }
 

@@ -25,8 +25,11 @@ void fixedUpdate();
 void draw();
 
 World activeWorld;
+long progStartTimeMicroseconds;
 #include "structures/hashmap.h"
 int main() {
+	progStartTimeMicroseconds = (long)(glfwGetTime() * 1000000.0);
+
 	_CrtMemState sOld;
 	_CrtMemState sNew;
 	_CrtMemState sDiff;
@@ -90,7 +93,7 @@ int main() {
 		update();
 		deltaTime = glfwGetTime() - lastUpdateTime;
 		lastUpdateTime = glfwGetTime();
-
+		
 		//fixed update
 		fixedDeltaTime = glfwGetTime() - lastFixedUpdateTime;
 		if (glfwGetTime() - lastFixedUpdateTime > (1.0 / (double)FIXED_UPDATES_PER_SECOND)) {
@@ -160,4 +163,9 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
 	else glViewport((width - height) / 2, 0, height, height);
 	windowX = width; windowY = height;
 	resolutionSensitivityOffset = 1.0;
+}
+
+long getCurrentTimeMicroseconds() {
+	long curTime = (long)(glfwGetTime() * 1000000.0);
+	return curTime - progStartTimeMicroseconds;
 }

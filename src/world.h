@@ -5,6 +5,7 @@
 #include "structures/list.h"
 #include "structures/linkedlist.h"
 #include "structures/hashmap.h"
+#include "structures/hashset.h"
 #include "math/noise.h"
 #include "shader.h"
 #include "skybox.h"
@@ -20,11 +21,11 @@ typedef struct World {
 	//main map of Int2 -> Chunk of all chunks that are currently loaded
 	HashMap chunkmap;
 
-	//map of Int2 -> Int2 of chunks that request generation/load
-	HashMap scheduledLoadChunks;
+	//set of Int2(int) of chunks that request generation/load
+	HashSet scheduledLoadChunks;
 
-	//map of Int2 -> Chunk for chunks that request a mesh update
-	HashMap scheduledMeshUpdateChunks;
+	//set of Int2(int) for chunks that request a mesh update
+	HashSet scheduledMeshUpdateChunks;
 
 	//queue of Int2's of chunk positions that request generation/load
 	LinkedList chunkLoadQueue;
