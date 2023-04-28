@@ -341,10 +341,10 @@ void Chunk_updatemesh(Chunk chunk, Chunk neighboringData[4]) {
 			}
 			free(texCoords);
 
-			vertices[v + 0] = _x - 0.5f; vertices[v + 1] = _y + 0.45f; vertices[v + 2] = _z + 0.5f;
-			vertices[v + 8] = _x + 0.5f; vertices[v + 9] = _y + 0.45f; vertices[v + 10] = _z + 0.5f;
-			vertices[v + 16] = _x + 0.5f; vertices[v + 17] = _y + 0.45f; vertices[v + 18] = _z - 0.5f;
-			vertices[v + 24] = _x - 0.5f; vertices[v + 25] = _y + 0.45f; vertices[v + 26] = _z - 0.5f;
+			vertices[v + 0] = _x - 0.5f; vertices[v + 1] = _y + 0.4f; vertices[v + 2] = _z + 0.5f;
+			vertices[v + 8] = _x + 0.5f; vertices[v + 9] = _y + 0.4f; vertices[v + 10] = _z + 0.5f;
+			vertices[v + 16] = _x + 0.5f; vertices[v + 17] = _y + 0.4f; vertices[v + 18] = _z - 0.5f;
+			vertices[v + 24] = _x - 0.5f; vertices[v + 25] = _y + 0.4f; vertices[v + 26] = _z - 0.5f;
 
 			indices[i + 0] = vertex + 0; indices[i + 1] = vertex + 1; indices[i + 2] = vertex + 2;
 			indices[i + 3] = vertex + 0; indices[i + 4] = vertex + 2; indices[i + 5] = vertex + 3;
