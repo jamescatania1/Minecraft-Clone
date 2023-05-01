@@ -17,5 +17,6 @@ This project is mainly an exercise, I am attempting to implement everything myse
 - Chunk sorting, transparency sorting.
 - Input library wrapper.
 - Camera matrix generation. 
+- Custom parser and files for block/face data.
 #
 The code adequately frees all memory without a necessary heap dump at program termination. The goal is to have this properly running on Linux and Windows. I may port this to vulkan in the future.

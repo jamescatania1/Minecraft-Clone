@@ -2,38 +2,25 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include <glad/glad.h>
 #include <glfw3.h>
 #include <stb_image.h>
 #include "atlas.h"
+#include "structures/list.h"
 
 #define ATLAS_CELL_WIDTH 16
 #define ATLAS_CELL_HEIGHT 16
-
-//block atlas coordinates -- top left is (0, 0)
-#define ATLAS_BLOCK_GRASS_TOP_X 0
-#define ATLAS_BLOCK_GRASS_TOP_Y 0
-
-#define ATLAS_BLOCK_GRASS_SIDE_X 1
-#define ATLAS_BLOCK_GRASS_SIDE_Y 0
-
-#define ATLAS_BLOCK_DIRT_X 2
-#define ATLAS_BLOCK_DIRT_Y 0
-
-#define ATLAS_BLOCK_STONE_X 3
-#define ATLAS_BLOCK_STONE_Y 0
-
-#define ATLAS_BLOCK_WATER_X 4
-#define ATLAS_BLOCK_WATER_Y 0
-
 
 unsigned int atlas;
 int width, height, nrChannels;
 float cellWidth;
 float cellHeight;
 
-//[blocktype][blockface][x/y]
-float texCoords[128][6][2];
+//[blocktype]
+BlockInfo blockData[128];
+
+void parseBlockInfo();
 
 void TextureAtlas_init() {
 	//load texture and generate it for openGL
@@ -57,69 +44,17 @@ void TextureAtlas_init() {
 	else printf("Failed to read atlas data\n");
 	free(data);
 
+	//parse blockinfo file and populate blockData
+	parseBlockInfo();
+
 	cellWidth = (float)ATLAS_CELL_WIDTH / (float)width;
 	cellHeight = (float)ATLAS_CELL_HEIGHT / (float)height;
 
-	//grass block faces
-	texCoords[BLOCK_GRASS][BLOCKFACE_TOP][0] = ATLAS_BLOCK_GRASS_TOP_X;
-	texCoords[BLOCK_GRASS][BLOCKFACE_TOP][1] = ATLAS_BLOCK_GRASS_TOP_Y;
-	texCoords[BLOCK_GRASS][BLOCKFACE_BOTTOM][0] = ATLAS_BLOCK_DIRT_X; 
-	texCoords[BLOCK_GRASS][BLOCKFACE_BOTTOM][1] = ATLAS_BLOCK_DIRT_Y;
-	texCoords[BLOCK_GRASS][BLOCKFACE_FRONT][0] = ATLAS_BLOCK_GRASS_SIDE_X; 
-	texCoords[BLOCK_GRASS][BLOCKFACE_FRONT][1] = ATLAS_BLOCK_GRASS_SIDE_Y;
-	texCoords[BLOCK_GRASS][BLOCKFACE_BACK][0] = ATLAS_BLOCK_GRASS_SIDE_X;
-	texCoords[BLOCK_GRASS][BLOCKFACE_BACK][1] = ATLAS_BLOCK_GRASS_SIDE_Y;
-	texCoords[BLOCK_GRASS][BLOCKFACE_LEFT][0] = ATLAS_BLOCK_GRASS_SIDE_X;
-	texCoords[BLOCK_GRASS][BLOCKFACE_LEFT][1] = ATLAS_BLOCK_GRASS_SIDE_Y;
-	texCoords[BLOCK_GRASS][BLOCKFACE_RIGHT][0] = ATLAS_BLOCK_GRASS_SIDE_X;
-	texCoords[BLOCK_GRASS][BLOCKFACE_RIGHT][1] = ATLAS_BLOCK_GRASS_SIDE_Y;
-
-	//dirt block faces
-	texCoords[BLOCK_DIRT][BLOCKFACE_TOP][0] = ATLAS_BLOCK_DIRT_X; 
-	texCoords[BLOCK_DIRT][BLOCKFACE_TOP][1] = ATLAS_BLOCK_DIRT_Y;
-	texCoords[BLOCK_DIRT][BLOCKFACE_BOTTOM][0] = ATLAS_BLOCK_DIRT_X; 
-	texCoords[BLOCK_DIRT][BLOCKFACE_BOTTOM][1] = ATLAS_BLOCK_DIRT_Y;
-	texCoords[BLOCK_DIRT][BLOCKFACE_FRONT][0] = ATLAS_BLOCK_DIRT_X; 
-	texCoords[BLOCK_DIRT][BLOCKFACE_FRONT][1] = ATLAS_BLOCK_DIRT_Y;
-	texCoords[BLOCK_DIRT][BLOCKFACE_BACK][0] = ATLAS_BLOCK_DIRT_X; 
-	texCoords[BLOCK_DIRT][BLOCKFACE_BACK][1] = ATLAS_BLOCK_DIRT_Y;
-	texCoords[BLOCK_DIRT][BLOCKFACE_LEFT][0] = ATLAS_BLOCK_DIRT_X; 
-	texCoords[BLOCK_DIRT][BLOCKFACE_LEFT][1] = ATLAS_BLOCK_DIRT_Y;
-	texCoords[BLOCK_DIRT][BLOCKFACE_RIGHT][0] = ATLAS_BLOCK_DIRT_X; 
-	texCoords[BLOCK_DIRT][BLOCKFACE_RIGHT][1] = ATLAS_BLOCK_DIRT_Y;
-
-	//dirt block faces
-	texCoords[BLOCK_STONE][BLOCKFACE_TOP][0] = ATLAS_BLOCK_STONE_X;
-	texCoords[BLOCK_STONE][BLOCKFACE_TOP][1] = ATLAS_BLOCK_STONE_Y;
-	texCoords[BLOCK_STONE][BLOCKFACE_BOTTOM][0] = ATLAS_BLOCK_STONE_X;
-	texCoords[BLOCK_STONE][BLOCKFACE_BOTTOM][1] = ATLAS_BLOCK_STONE_Y;
-	texCoords[BLOCK_STONE][BLOCKFACE_FRONT][0] = ATLAS_BLOCK_STONE_X;
-	texCoords[BLOCK_STONE][BLOCKFACE_FRONT][1] = ATLAS_BLOCK_STONE_Y;
-	texCoords[BLOCK_STONE][BLOCKFACE_BACK][0] = ATLAS_BLOCK_STONE_X;
-	texCoords[BLOCK_STONE][BLOCKFACE_BACK][1] = ATLAS_BLOCK_STONE_Y;
-	texCoords[BLOCK_STONE][BLOCKFACE_LEFT][0] = ATLAS_BLOCK_STONE_X;
-	texCoords[BLOCK_STONE][BLOCKFACE_LEFT][1] = ATLAS_BLOCK_STONE_Y;
-	texCoords[BLOCK_STONE][BLOCKFACE_RIGHT][0] = ATLAS_BLOCK_STONE_X;
-	texCoords[BLOCK_STONE][BLOCKFACE_RIGHT][1] = ATLAS_BLOCK_STONE_Y;
-
-	//dirt block faces
-	texCoords[BLOCK_WATER][BLOCKFACE_TOP][0] = ATLAS_BLOCK_WATER_X;
-	texCoords[BLOCK_WATER][BLOCKFACE_TOP][1] = ATLAS_BLOCK_WATER_Y;
-	texCoords[BLOCK_WATER][BLOCKFACE_BOTTOM][0] = ATLAS_BLOCK_WATER_X;
-	texCoords[BLOCK_WATER][BLOCKFACE_BOTTOM][1] = ATLAS_BLOCK_WATER_Y;
-	texCoords[BLOCK_WATER][BLOCKFACE_FRONT][0] = ATLAS_BLOCK_WATER_X;
-	texCoords[BLOCK_WATER][BLOCKFACE_FRONT][1] = ATLAS_BLOCK_WATER_Y;
-	texCoords[BLOCK_WATER][BLOCKFACE_BACK][0] = ATLAS_BLOCK_WATER_X;
-	texCoords[BLOCK_WATER][BLOCKFACE_BACK][1] = ATLAS_BLOCK_WATER_Y;
-	texCoords[BLOCK_WATER][BLOCKFACE_LEFT][0] = ATLAS_BLOCK_WATER_X;
-	texCoords[BLOCK_WATER][BLOCKFACE_LEFT][1] = ATLAS_BLOCK_WATER_Y;
-	texCoords[BLOCK_WATER][BLOCKFACE_RIGHT][0] = ATLAS_BLOCK_WATER_X;
-	texCoords[BLOCK_WATER][BLOCKFACE_RIGHT][1] = ATLAS_BLOCK_WATER_Y;
-
 	for (int i = 0; i < 128; i++) {
+		if (!blockData[i]) continue;
 		for (int j = 0; j < 6; j++) {
-			texCoords[i][j][0] *= cellWidth;
-			texCoords[i][j][1] *= cellHeight;
+			blockData[i]->faces[j]->x *= cellWidth;
+			blockData[i]->faces[j]->y *= cellHeight;
 		}
 	}
 }
@@ -130,17 +65,210 @@ void TextureAtlas_free() {
 
 float* TextureAtlas_getFaceCoords(BLOCK_TYPE block, ATLAS_BLOCKFACE face) {
 	float* result = (float*)malloc(8 * sizeof(float));
-	result[0] = texCoords[block][face][0];  //top left
-	result[1] = texCoords[block][face][1];
-	result[2] = result[0] + cellWidth;		//top right
-	result[3] = result[1];
-	result[4] = result[2];				    //bottom right
-	result[5] = result[1] + cellWidth;
-	result[6] = result[0];					//bottom left
-	result[7] = result[5];
+
+	// if random orientation
+	int r = blockData[block]->faces[face]->randRotation ? rand() % 4 : 0;
+	if (r == 0) {
+		result[0] = blockData[block]->faces[face]->x;  //top left
+		result[1] = blockData[block]->faces[face]->y;
+		result[2] = result[0] + cellWidth;		//top right
+		result[3] = result[1];
+		result[4] = result[2];				    //bottom right
+		result[5] = result[1] + cellWidth;
+		result[6] = result[0];					//bottom left
+		result[7] = result[5];
+	}
+	else if (r == 1) {
+		result[2] = blockData[block]->faces[face]->x;  //top left
+		result[3] = blockData[block]->faces[face]->y;
+		result[4] = result[2] + cellWidth;		//top right
+		result[5] = result[3];
+		result[6] = result[4];				    //bottom right
+		result[7] = result[3] + cellWidth;
+		result[0] = result[2];					//bottom left
+		result[1] = result[7];
+	}
+	else if (r == 2) {
+		result[4] = blockData[block]->faces[face]->x;  //top left
+		result[5] = blockData[block]->faces[face]->y;
+		result[6] = result[4] + cellWidth;		//top right
+		result[7] = result[5];
+		result[0] = result[6];				    //bottom right
+		result[1] = result[5] + cellWidth;
+		result[2] = result[4];					//bottom left
+		result[3] = result[1];
+	}
+	else if (r == 3) {
+		result[6] = blockData[block]->faces[face]->x;  //top left
+		result[7] = blockData[block]->faces[face]->y;
+		result[0] = result[6] + cellWidth;		//top right
+		result[1] = result[7];
+		result[2] = result[0];				    //bottom right
+		result[3] = result[7] + cellWidth;
+		result[4] = result[6];					//bottom left
+		result[5] = result[3];
+	}
+
+	//flip x randomly
+	r = blockData[block]->faces[face]->randFlipX ? rand() % 2 : 0;
+	if (r) { //permutation (01)(23)
+		float tx = result[0]; float ty = result[1];
+		result[0] = result[2];
+		result[1] = result[3];
+		result[2] = tx; result[3] = ty;
+		tx = result[4]; ty = result[5];
+		result[4] = result[6]; 
+		result[5] = result[7];
+		result[6] = tx; result[7] = ty;
+	}
+
+	//flip y randomly
+	r = blockData[block]->faces[face]->randFlipY ? rand() % 2 : 0;
+	if (r) { //permutation (03)(12)
+		float tx = result[0]; float ty = result[1];
+		result[0] = result[6];
+		result[1] = result[7];
+		result[6] = tx; result[7] = ty;
+		tx = result[2]; ty = result[3];
+		result[2] = result[4];
+		result[3] = result[5];
+		result[4] = tx; result[5] = ty;
+	}
+
 	return result;
 }
 
 unsigned int TextureAtlas_currentTexture() {
 	return atlas;
+}
+
+int parseInt(char* file, int i, List defines, List defineVals);
+char* fileread(const char* filename);
+void parseBlockInfo() {
+	char* file = fileread("content\\atlas.blockinfo");
+	List defines = new_List();
+	List defineVals = new_List();
+	int filelen = strlen(file);
+	int i = 0;
+	while (i < filelen) {
+		if (file[i] == '#') { //define identifier
+			i++;
+			int j = i;
+			while (file[j] != ' ') j++;
+			char* defineStr = (char*)malloc((j - i + 1) * sizeof(char));
+			for (int _j = i; _j < j; _j++) {
+				defineStr[_j - i] = file[_j];
+			}
+			defineStr[j - i] = '\0';
+			List_add(defines, defineStr);
+
+			i = j = j + 1;
+			while (file[j] != ';') j++;
+			char* defineVal = (char*)malloc((j - i + 1) * sizeof(char));
+			for (int _j = i; _j < j; _j++) {
+				defineVal[_j - i] = file[_j];
+			}
+			defineVal[j - i] = '\0';
+			int* defineValInt = (int*)malloc(sizeof(int));
+			*defineValInt = atoi(defineVal);
+			free(defineVal);
+			List_add(defineVals, defineValInt);
+			i = j;
+			continue;
+		}
+
+		if (file[i] == '$') { //block identifier
+			i++;
+			while (file[i] == ' ') i++;
+			BlockInfo info = (BlockInfo)malloc(sizeof(struct BlockInfo));
+			int blockIndex = parseInt(file, i, defines, defineVals);
+			for (int side = 0; side < 6; side++) {
+				info->faces[side] = (BlockFaceInfo)malloc(sizeof(struct BlockFaceInfo));
+				while (file[i] != '{') { i++; }
+				i++; 
+				while (file[i] == ' ') { i++; }
+				info->faces[side]->x = parseInt(file, i, defines, defineVals);
+				while (file[i] != ',') { i++; }
+				i++; 
+				while (file[i] == ' ') { i++; }
+				info->faces[side]->y = parseInt(file, i, defines, defineVals);
+				while (file[i] != ',') { i++; }
+				i++; 
+				while (file[i] == ' ') { i++; }
+				info->faces[side]->randRotation = parseInt(file, i, defines, defineVals);
+				while (file[i] != ',') { i++; }
+				i++; 
+				while (file[i] == ' ') { i++; }
+				info->faces[side]->randFlipX = parseInt(file, i, defines, defineVals);
+				while (file[i] != ',') { i++; }
+				i++; 
+				while (file[i] == ' ') { i++; }
+				info->faces[side]->randFlipY = parseInt(file, i, defines, defineVals);
+				while (file[i] != '}') i++;
+			}
+			blockData[blockIndex] = info;
+			continue;
+		}
+		i++;
+	}
+	free(file);
+	List_freeAll(defines, free);
+	List_freeAll(defineVals, free);
+}
+char* fileread(const char* filename) {
+	FILE* file = fopen(filename, "rb");
+	if (file == NULL) {
+		fprintf(stderr, "Failed to open file '%s'\n", filename);
+		return NULL;
+	}
+	fseek(file, 0L, SEEK_END);
+	long file_size = ftell(file);
+	rewind(file);
+	char* buffer = (char*)malloc(sizeof(char) * (file_size + 1));
+	if (buffer == NULL) {
+		fclose(file);
+		fprintf(stderr, "Failed to allocate memory for file '%s'\n", filename);
+		return NULL;
+	}
+	size_t bytes_read = fread(buffer, sizeof(char), file_size, file);
+	if (bytes_read != file_size) {
+		fclose(file);
+		free(buffer);
+		fprintf(stderr, "Failed to read file '%s'\n", filename);
+		return NULL;
+	}
+	buffer[file_size] = '\0';
+	fclose(file);
+	return buffer;
+}
+int parseInt(char* file, int i, List defines, List defineVals) {
+	if (file[i] == '&') { //define identifier
+		i++;
+		int j = i;
+		while (file[j] != ',' && file[j] != ' ' && file[j] != '}' && file[j] != ';') j++;
+		char* replaceStr = (char*)malloc((j - i + 1) * sizeof(char));
+		for (int _j = i; _j < j; _j++) {
+			replaceStr[_j - i] = file[_j];
+		}
+		replaceStr[j - i] = '\0';
+		for (int k = 0; k < defines->count; k++) {
+			char* cmpDefine = (char*)List_get(defines, k);
+			if (!strcmp(cmpDefine, replaceStr)) {
+				free(replaceStr);
+				return *((int*)List_get(defineVals, k));
+			}
+		}
+		free(replaceStr);
+		return -1;
+	}
+	int j = i;
+	while (file[j] != ',' && file[j] != ' ' && file[j] != '}' && file[j] != ';') j++;
+	char* intString = (char*)malloc((j - i + 1) * sizeof(char));
+	for (int _j = i; _j < j; _j++) {
+		intString[_j - i] = file[_j];
+	}
+	intString[j - i] = '\0';
+	int result = atoi(intString);
+	free(intString);
+	return result;
 }

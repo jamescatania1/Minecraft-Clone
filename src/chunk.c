@@ -46,7 +46,7 @@ void Chunk_free(Chunk chunk) {
 	//delete VAO, VBO, and EBO
 	glDeleteVertexArrays(1, &chunk->renderer->VAO);
 	glDeleteBuffers(1, &chunk->renderer->VBO);
-	glDeleteBuffers(1, &chunk->renderer->VBO);
+	glDeleteBuffers(1, &chunk->renderer->EBO);
 
 	Shader_free(chunk->renderer->shader);
 	RenderComponent_free(chunk->renderer);

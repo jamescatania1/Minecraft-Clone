@@ -11,6 +11,17 @@
 #define BLOCKFACE_LEFT 4
 #define BLOCKFACE_RIGHT 5
 
+typedef struct BlockFaceInfo {
+	float x, y;
+	int randRotation;
+	int randFlipX;
+	int randFlipY;
+} *BlockFaceInfo;
+
+typedef struct BlockInfo {
+	BlockFaceInfo faces[6];
+} *BlockInfo;
+
 extern void TextureAtlas_init();
 
 extern void TextureAtlas_free();

@@ -1,7 +1,7 @@
 #ifndef _main_h
 #define _main_h
 
-static int RENDER_DISTANCE = 18;
+static int RENDER_DISTANCE = 20;
 
 GLFWwindow* window;
 
