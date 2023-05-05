@@ -60,7 +60,17 @@ void TextureAtlas_init() {
 }
 
 void TextureAtlas_free() {
+	for (int i = 0; i < 128; i++) {
+		if (!blockData[i]) continue;
+		BlockInfo_free(blockData[i]);
+	}
+}
 
+void BlockInfo_free(BlockInfo block) {
+	for (int i = 0; i < 6; i++) {
+		free(block->faces[i]);
+	}
+	free(block);
 }
 
 float* TextureAtlas_getFaceCoords(BLOCK_TYPE block, ATLAS_BLOCKFACE face) {

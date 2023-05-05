@@ -22,6 +22,8 @@ typedef struct BlockInfo {
 	BlockFaceInfo faces[6];
 } *BlockInfo;
 
+extern void BlockInfo_free(BlockInfo block);
+
 extern void TextureAtlas_init();
 
 extern void TextureAtlas_free();

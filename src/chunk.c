@@ -3,10 +3,12 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <math.h>
 #include "chunk.h"
 #include "atlas.h"
 #include "math/noise.h"
 #include "main.h"
+#include "blockdef.h"
 
 #define LIGHT_AMT_TOP 1.0
 #define LIGHT_AMT_BOTTOM 0.6
@@ -67,8 +69,7 @@ int Chunk_hash_pos(int x, int z) {
 	return ((a + b) * (a + b + 1) / 2 + b);
 }
 
-
-Chunk Chunk_generate(int xPos, int zPos) {
+Chunk Chunk_generate(World world, int xPos, int zPos) {
 	Chunk chunk = new_Chunk();
 	if (!chunk) {
 		printf("Couldn't generate chunk\n");
@@ -80,23 +81,29 @@ Chunk Chunk_generate(int xPos, int zPos) {
 	chunk->renderer->transform->position->z = 16.0f * (float)zPos;
 	RenderComponent_updatetransformmatrix(chunk->renderer);
 
-	double baseHeight = 40.0;
-	double amplitude = 60.0;
-	double freq = 0.0075;
-
 	for (int x = 0; x < 16; x++) {
 		for (int z = 0; z < 16; z++) {
-			int height = (int)((double)amplitude * octaveNoise(((double)x + 16.0 * (double)xPos) * freq, ((double)z + 16.0 * (double)zPos) * freq) + baseHeight);
-			//printf("%d\n", height);
+			double _x = (double)(x + 16 * xPos); 
+			double _z = (double)(z + 16 * zPos);
+			double oceanMapVal = octaveNoise(world->oceanMap, _x, _z);
+			double oceanBlendFactor = atan(90.0 * (oceanMapVal - 0.3)) * 1.02 / M_PI + 0.51;
+			oceanBlendFactor = fmin(1.0, fmax(0.0, oceanBlendFactor));
+			double oceanVal = octaveNoise(world->biomeInfo[BIOME_OCEAN]->heightmap, _x, _z);
+			double groundVal = octaveNoise(world->biomeInfo[BIOME_PLAINS]->heightmap, _x, _z);
+			int height = (int)(oceanVal + (groundVal - oceanVal) * oceanBlendFactor);
+
 			for (int y = 0; y < 256; y++) {
 				if (y < height - 10) {
 					chunk->data[x][z][y] = (char)BLOCK_STONE;
 				}
 				else if (y < height) {
-					chunk->data[x][z][y] = (char)BLOCK_DIRT;
+					if (oceanMapVal > 0.34 || (oceanMapVal >= 0.34 && y < 62)) chunk->data[x][z][y] = (char)BLOCK_DIRT;
+					else chunk->data[x][z][y] = (char)BLOCK_STONE;
 				}
 				else if (y == height) {
-					chunk->data[x][z][y] = (char)BLOCK_GRASS;
+					if (oceanMapVal < 0.3025 || (oceanMapVal >= 0.3025 && y < 62)) chunk->data[x][z][y] = (char)BLOCK_STONE;
+					else if (oceanMapVal < 0.34 || y < 66) chunk->data[x][z][y] = (char)BLOCK_SAND;
+					else chunk->data[x][z][y] = (char)BLOCK_GRASS;
 				}
 			}
 		}

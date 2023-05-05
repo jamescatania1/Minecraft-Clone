@@ -10,10 +10,22 @@
 #include "shader.h"
 #include "skybox.h"
 
+typedef struct BiomeInfo {
+	OctaveNoise heightmap;
+} *BiomeInfo;
+
+extern BiomeInfo new_BiomeInfo(OctaveNoise heightmap);
+
+extern void BiomeInfo_free(BiomeInfo biome);
+
 typedef struct World {
 	unsigned int cameraUBO;
-	OctaveNoise noise;
 	Skybox skybox;
+
+	//biome info
+	BiomeInfo biomeInfo[3];
+
+	OctaveNoise oceanMap;
 
 	//main list of all currently loaded chunks
 	List chunks;

@@ -15,6 +15,7 @@
 #include "renderComponent.h"
 #include "structures/list.h"
 #include "chunk.h"
+#include "blockdef.h"
 #include "atlas.h"
 #include "math/noise.h"
 
@@ -25,8 +26,22 @@ int cursorLocked;
 int prevCamX;
 int prevCamZ;
 
+BiomeInfo new_BiomeInfo(OctaveNoise heightmap) {
+	BiomeInfo this = (BiomeInfo)malloc(sizeof(struct BiomeInfo));
+	if (!this) return NULL;
+
+	this->heightmap = heightmap;
+	return this;
+}
+
+void BiomeInfo_free(BiomeInfo biome) {
+	OctaveNoise_free(biome->heightmap);
+	free(biome);
+}
+
 World new_World() {
 	World this = (World)malloc(sizeof(struct World));
+	if (!this) return NULL;
 
 	//lock cursor
 	cursorLocked = LOCK_CURSOR_DEFAULT;
@@ -43,7 +58,18 @@ World new_World() {
 	TextureAtlas_init();
 
 	//initialize noise
-	this->noise = OctaveNoise_set(0, 7, 0.5, 2.0);
+	OctaveNoise_setseed(0);
+	
+	this->oceanMap = new_OctaveNoise(1.0, 0.0015, 0.0, 5, 0.3, 2.2);
+
+	//ocean biome
+	this->biomeInfo[BIOME_OCEAN] = new_BiomeInfo(new_OctaveNoise(23.0, 0.015, 15.0, 4, 0.7, 1.8));
+
+	//plains biome
+	this->biomeInfo[BIOME_PLAINS] = new_BiomeInfo(new_OctaveNoise(50.0, 0.0075, 50.0, 6, 0.5, 2.0));
+
+	//desert biome
+	this->biomeInfo[BIOME_DESERT] = new_BiomeInfo(new_OctaveNoise(30.0, 0.0045, 45.0, 6, 0.5, 2.0));
 
 	//load chunkShader
 	this->chunkShader = new_Shader("shaders\\default_vert.vshader", "shaders\\default_frag.fshader");
@@ -84,8 +110,9 @@ void World_free(World world) {
 	Shader_free(world->chunkShader);
 	Skybox_free(world->skybox);
 	Camera_free();
-	OctaveNoise_free(world->noise);
 	TextureAtlas_free();
+	for (int i = 0; i < 3; i++) BiomeInfo_free(world->biomeInfo[i]);
+	OctaveNoise_free(world->oceanMap);
 	free(world);
 }
 
@@ -108,10 +135,13 @@ void World_update(World world) {
 			Chunk c = (Chunk)List_get(world->chunks, i);
 			if (!c) continue;
 			if (!c->cull) viewingchunks++;
-			numTris += c->renderer->indexCount / 3;
+			if (!c->cull) numTris += c->renderer->indexCount / 3;
 		}
-		printf("== World Info ==\n%d render distance\n%d chunks loaded\n%d chunks loaded (not culled)\n%d triangles loaded\n================\n",
-			RENDER_DISTANCE, world->chunks->count, viewingchunks, numTris);
+		printf("== World Info ==\n%u seed\n%d render distance\n%d chunks loaded\n%d chunks loaded (not culled)\n%d triangles loaded (not culled)\n================\n",
+			OctaveNoise_getseed(), RENDER_DISTANCE, world->chunks->count, viewingchunks, numTris);
+	}
+	if (getKey(KEY_G)->pressed) {
+		//printf("Ocean Value: %f\n", octaveNoise(world->oceanMap, camera->position->x, camera->position->z));
 	}
 
 	if (getKey(KEY_ESCAPE)->pressed) {
@@ -131,7 +161,7 @@ void World_update(World world) {
 	if (world->chunkLoadQueue->count > 0) {
 		LinkedListNode chunkPosNode = LinkedList_polllast(world->chunkLoadQueue);
 		Int2 chunkpos = (Int2)chunkPosNode->data;
-		Chunk c = Chunk_generate(chunkpos->x, chunkpos->y);
+		Chunk c = Chunk_generate(world, chunkpos->x, chunkpos->y);
 		List_add(world->chunks, c);
 
 		HashMap_insert_at(world->chunkmap, Chunk_hash(c), c);

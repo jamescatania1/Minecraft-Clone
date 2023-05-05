@@ -10,7 +10,7 @@ double lerp(double t, double a, double b);
 double fade(double t);
 double grad(int hash, double x, double y);
 
-OctaveNoise activeNoise;
+unsigned int seed;
 
 static int permutation[] = { 151,160,137,91,90,15,
 	131,13,201,95,96,53,194,233,7,225,140,36,103,30,69,142,8,99,37,240,21,10,23,
@@ -27,8 +27,10 @@ static int permutation[] = { 151,160,137,91,90,15,
 	138,236,205,93,222,114,67,29,24,72,243,141,128,195,78,66,215,61,156,180
 };
 
-PerlinNoise new_PerlinNoise(char key[256]) {
+PerlinNoise new_PerlinNoise(char key[256], double xOffset, double yOffset) {
 	PerlinNoise this = (PerlinNoise)malloc(sizeof(struct PerlinNoise));
+	this->xOffset = xOffset;
+	this->yOffset = yOffset;
 	for (int i = 0; i < 256; i++) {
 		this->key[i] = key[i];
 		this->p[i] = permutation[(int)key[i] + 128];
@@ -42,13 +44,13 @@ void PerlinNoise_free(PerlinNoise noise) {
 }
 
 double perlinNoise(PerlinNoise noise, double x, double y) {
-	int xpos = (int)floor(x) % 256;
+	int xpos = (int)floor(x + noise->xOffset) % 256;
 	if (xpos < 0) xpos += 256;
-	int ypos = (int)floor(y) % 256;
+	int ypos = (int)floor(y + noise->yOffset) % 256;
 	if (ypos < 0) ypos += 256;
-	double _x = fmod(x, 1.0);
+	double _x = fmod(x + noise->xOffset, 1.0);
 	if (_x < 0.0f) _x += 1.0f;
-	double _y = fmod(y, 1.0);
+	double _y = fmod(y + noise->yOffset, 1.0);
 	if (_y < 0.0f) _y += 1.0f;
 
 	double xfade = fade(_x); //fade curves
@@ -87,8 +89,29 @@ double grad(int hash, double x, double y) {
 
 // Octave noise
 
-char* OctaveNoise_key_generate(unsigned int seed) {
+void OctaveNoise_setseed(unsigned int seedVal) {
+	if (!seedVal) { //generate random seed
+		srand(time(NULL));
+		unsigned int genseed = 0;
+		for (int i = 0; i < 9; i++) {
+			genseed *= 10;
+			genseed += rand() % 10;
+		}
+		genseed *= 10;
+		genseed += rand() % 4;
+		seed = genseed;
+	}
+	else seed = seedVal;
+
 	srand(seed);
+}
+
+unsigned int OctaveNoise_getseed() {
+	return seed;
+}
+
+char* OctaveNoise_key_generate() {
+	//srand(seed);
 	int key[256];
 	char* result = (char*)malloc(256 * sizeof(char));
 	for (int i = 0; i < 256; i++) key[i] = -1;
@@ -112,30 +135,24 @@ char* OctaveNoise_key_generate(unsigned int seed) {
 }
 
 //updates active octave noise and returns the object
-OctaveNoise OctaveNoise_set(unsigned int seed, int octaveCt, double ampOctaveMultiplier, double freqOctaveMultiplier) {
+OctaveNoise new_OctaveNoise(double amplitude, double frequency, double offset, int octaveCt, double ampOctaveMultiplier, double freqOctaveMultiplier) {
 	OctaveNoise this = (OctaveNoise)malloc(sizeof(struct OctaveNoise));
-	if (!seed) { //generate random seed
-		srand(time(NULL));
-		unsigned int genseed = 0;
-		for (int i = 0; i < 9; i++) {
-			genseed *= 10;
-			genseed += rand() % 10;
-		}
-		genseed *= 10;
-		genseed += rand() % 4;
-		this->seed = genseed;
-	}
-	else this->seed = seed;
 
-	this->key = OctaveNoise_key_generate(this->seed);
+	this->amplitude = amplitude;
+	this->frequency = frequency;
+	this->offset = offset;
 	this->octaveCt = octaveCt;
 	this->ampOctaveMultiplier = ampOctaveMultiplier;
 	this->freqOctaveMultiplier = freqOctaveMultiplier;
 	this->octaves = (PerlinNoise*)malloc(octaveCt * sizeof(PerlinNoise));
+
 	for (int i = 0; i < octaveCt; i++) {
-		this->octaves[i] = new_PerlinNoise(this->key);
+		double xOffset = (double)rand() + ((double)rand() / (double)RAND_MAX);
+		double yOffset = (double)rand() + ((double)rand() / (double)RAND_MAX);
+		char* key = OctaveNoise_key_generate();
+		this->octaves[i] = new_PerlinNoise(key, xOffset, yOffset);
+		free(key);
 	}
-	activeNoise = this;
 	return this;
 }
 
@@ -144,20 +161,19 @@ void OctaveNoise_free(OctaveNoise noise) {
 		PerlinNoise_free(noise->octaves[i]);
 	}
 	free(noise->octaves);
-	free(noise->key);
 	free(noise);
 }
 
-double octaveNoise(double x, double y) {
+double octaveNoise(OctaveNoise noise, double x, double y) {
 	double result = 0.0;
 	double amp = 1.0;
-	double freq = 1.0;
+	double freq = noise->frequency;
 	double totalAmp = 0.0;
-	for (int i = 0; i < activeNoise->octaveCt; i++) {
-		result += amp * perlinNoise(activeNoise->octaves[i], x * freq, y * freq);
+	for (int i = 0; i < noise->octaveCt; i++) {
+		result += amp * perlinNoise(noise->octaves[i], x * freq, y * freq);
 		totalAmp += amp;
-		amp *= activeNoise->ampOctaveMultiplier;
-		freq *= activeNoise->freqOctaveMultiplier;
+		amp *= noise->ampOctaveMultiplier;
+		freq *= noise->freqOctaveMultiplier;
 	}
-	return result / totalAmp;
+	return noise->amplitude * result / totalAmp + noise->offset;
 }
