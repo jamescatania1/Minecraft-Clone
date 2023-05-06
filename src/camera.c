@@ -9,7 +9,7 @@
 #include "math/mathutil.h"
 #include "input.h"
 
-#define ZFAR_OFFSET 30.0
+#define ZFAR_OFFSET 100.0
 #define PREFERRED_ASPECT_WIDTH 16
 #define PREFERRED_ASPECT_HEIGHT 9
 #define ROTATE_INTERP_SPEED 1.1

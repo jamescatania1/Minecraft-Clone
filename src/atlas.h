@@ -12,7 +12,7 @@
 #define BLOCKFACE_RIGHT 5
 
 typedef struct BlockFaceInfo {
-	float x, y;
+	int x, y;
 	int randRotation;
 	int randFlipX;
 	int randFlipY;
@@ -28,7 +28,7 @@ extern void TextureAtlas_init();
 
 extern void TextureAtlas_free();
 
-extern float* TextureAtlas_getFaceCoords(BLOCK_TYPE block, ATLAS_BLOCKFACE face);
+extern GLubyte* TextureAtlas_getFaceCoords(BLOCK_TYPE block, ATLAS_BLOCKFACE face);
 
 extern unsigned int TextureAtlas_currentTexture();
 

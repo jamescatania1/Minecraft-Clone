@@ -58,6 +58,11 @@ extern LinkedListNode LinkedList_pollfirst(LinkedList list);
  */
 extern LinkedListNode LinkedList_polllast(LinkedList list);
 
+/*
+ * Removes node (node must be in list).
+ */
+extern void LinkedList_remove(LinkedList list, LinkedListNode node);
+
 
 typedef struct IntLinkedListNode {
 	struct LinkedListNode* prev;

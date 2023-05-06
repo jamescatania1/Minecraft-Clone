@@ -19,6 +19,9 @@
 #include "atlas.h"
 #include "math/noise.h"
 
+//temporary
+#define SEED_INPUT 5
+
 #define LOCK_CURSOR_DEFAULT 1
 #define FRUSTUM_CULLING 1
 
@@ -58,7 +61,7 @@ World new_World() {
 	TextureAtlas_init();
 
 	//initialize noise
-	OctaveNoise_setseed(0);
+	OctaveNoise_setseed(SEED_INPUT);
 	
 	this->oceanMap = new_OctaveNoise(1.0, 0.0015, 0.0, 5, 0.3, 2.2);
 
@@ -89,11 +92,11 @@ World new_World() {
 	this->chunks = new_List();
 	this->chunkmap = new_HashMap(25);
 	this->scheduledLoadChunks = new_HashSet(25);
-	this->scheduledMeshUpdateChunks = new_HashSet(25);
+	//this->scheduledMeshUpdateChunks = new_HashSet(25);
 
 	//initialize chunk load queue and mesh update queue
 	this->chunkLoadQueue = new_LinkedList();
-	this->chunkMeshUpdateQueue = new_LinkedList();
+	//this->chunkMeshUpdateQueue = new_LinkedList();
 
 	prevCamX = prevCamZ = -2;
 
@@ -101,9 +104,9 @@ World new_World() {
 }
 
 void World_free(World world) {
-	LinkedList_freeAll(world->chunkMeshUpdateQueue, Int2_free);
+	//LinkedList_freeAll(world->chunkMeshUpdateQueue, Int2_free);
 	LinkedList_freeAll(world->chunkLoadQueue, Int2_free);
-	HashSet_free(world->scheduledMeshUpdateChunks);
+	//HashSet_free(world->scheduledMeshUpdateChunks);
 	HashSet_free(world->scheduledLoadChunks);
 	List_freeAll(world->chunks, Chunk_free);
 	HashMap_free(world->chunkmap);
@@ -116,6 +119,7 @@ void World_free(World world) {
 	free(world);
 }
 
+inline Chunk ChunkGetOrLoad(World world, int x, int z);
 void QSList(List in, float* compare, int lowIndx, int hiIndx);
 int QSPartition(List in, float* compare, int lowIndx, int hiIndx);
 
@@ -141,7 +145,7 @@ void World_update(World world) {
 			OctaveNoise_getseed(), RENDER_DISTANCE, world->chunks->count, viewingchunks, numTris);
 	}
 	if (getKey(KEY_G)->pressed) {
-		//printf("Ocean Value: %f\n", octaveNoise(world->oceanMap, camera->position->x, camera->position->z));
+		printf("Camera %f %f\n", camera->position->x, camera->position->z);
 	}
 
 	if (getKey(KEY_ESCAPE)->pressed) {
@@ -157,81 +161,49 @@ void World_update(World world) {
 	int camX = (int)floorf(camera->position->x / 16.0f);
 	int camZ = (int)floorf(-camera->position->z / 16.0f);
 
-	//load scheduled chunks
+	//update scheduled chunk meshes
 	if (world->chunkLoadQueue->count > 0) {
 		LinkedListNode chunkPosNode = LinkedList_polllast(world->chunkLoadQueue);
 		Int2 chunkpos = (Int2)chunkPosNode->data;
-		Chunk c = Chunk_generate(world, chunkpos->x, chunkpos->y);
-		List_add(world->chunks, c);
-
-		HashMap_insert_at(world->chunkmap, Chunk_hash(c), c);
-		HashSet_remove(world->scheduledLoadChunks, Chunk_hash(c));
+		int cx = chunkpos->x; int cz = chunkpos->y;
+		Chunk c = ChunkGetOrLoad(world, cx, cz);
+		//HashSet_remove(world->scheduledLoadChunks, Chunk_hash(c));
 		free(chunkPosNode);
 		free(chunkpos);
-	}
-
-	//update scheduled chunk meshes
-	if (world->chunkMeshUpdateQueue->count > 0) {
-		LinkedListNode chunkPosNode = LinkedList_polllast(world->chunkMeshUpdateQueue);
-		Int2 chunkpos = (Int2)chunkPosNode->data;
-		Chunk c = HashMap_get(world->chunkmap, Chunk_hash_pos(chunkpos->x, chunkpos->y));
-		free(chunkPosNode);
-		free(chunkpos);
-		if (c) {
-			Chunk c_l = HashMap_get(world->chunkmap, Chunk_hash_pos(c->posX - 1, c->posZ));
-			Chunk c_r = HashMap_get(world->chunkmap, Chunk_hash_pos(c->posX + 1, c->posZ));
-			Chunk c_b = HashMap_get(world->chunkmap, Chunk_hash_pos(c->posX, c->posZ - 1));
-			Chunk c_f = HashMap_get(world->chunkmap, Chunk_hash_pos(c->posX, c->posZ + 1));
-			if (c_l && c_r && c_b && c_f) {
-				Chunk neighbors[4] = { c_l, c_r, c_b, c_f };
-				Chunk_updatemesh(c, neighbors);
-				HashSet_remove(world->scheduledMeshUpdateChunks, Chunk_hash_pos(c->posX, c->posZ));
-			}
-		}
-	}
-
-	for (int i = 0; i < world->chunks->count; i++) { //schedule mesh update of unmeshed chunks with loaded neighbors
-		Chunk c = (Chunk)List_get(world->chunks, i);
-		if (!c || c->setMesh) continue;
-		if (HashSet_contains(world->scheduledMeshUpdateChunks, Chunk_hash(c))) continue;
-		Chunk c_l = HashMap_get(world->chunkmap, Chunk_hash_pos(c->posX - 1, c->posZ));
-		Chunk c_r = HashMap_get(world->chunkmap, Chunk_hash_pos(c->posX + 1, c->posZ));
-		Chunk c_b = HashMap_get(world->chunkmap, Chunk_hash_pos(c->posX, c->posZ - 1));
-		Chunk c_f = HashMap_get(world->chunkmap, Chunk_hash_pos(c->posX, c->posZ + 1));
-		if (c_l && c_r && c_b && c_f) {
-			//Chunk neighbors[4] = { c_l, c_r, c_b, c_f };
-			LinkedList_prepend(world->chunkMeshUpdateQueue, new_Int2(c->posX, c->posZ));
-			HashSet_insert(world->scheduledMeshUpdateChunks, Chunk_hash(c));
-			//Chunk_updatemesh(c, neighbors);
-		}
+		
+		Chunk c_l = ChunkGetOrLoad(world, cx - 1, cz);
+		Chunk c_r = ChunkGetOrLoad(world, cx + 1, cz);
+		Chunk c_b = ChunkGetOrLoad(world, cx, cz - 1);
+		Chunk c_f = ChunkGetOrLoad(world, cx, cz + 1);
+		Chunk neighbors[4] = { c_l, c_r, c_b, c_f };
+		Chunk_updatemesh(c, neighbors);
 	}
 
 	//camera moved between chunks
 	if (camX != prevCamX || camZ != prevCamZ) {
-		for (int i = 0; i < world->chunks->count; i++) { //unload chunks out of render distance
-			Chunk c = (Chunk)List_get(world->chunks, i);
-			if (!c) continue;
-			double camDistance = sqrt((double)((c->posX - camX) * (c->posX - camX) + (c->posZ - camZ) * (c->posZ - camZ)));
-			if (camDistance > (double)(RENDER_DISTANCE + 1) + 0.5) {
-				List_remove(world->chunks, i);
-				HashMap_remove(world->chunkmap, Chunk_hash(c));
-				HashSet_remove(world->scheduledLoadChunks, Chunk_hash(c));
-				Chunk_free(c);
-			}
-		}
-
 		for (int i = 1; i <= RENDER_DISTANCE + 1; i++) {
 			for (int x = -i + camX; x <= i + camX; x++) { //schedule load of new chunks
 				for (int z = -i + camZ; z <= i + camZ; z++) {
 					double camDistance = sqrt((double)((x - camX) * (x - camX) + (z - camZ) * (z - camZ)));
 					if (camDistance > (double)(RENDER_DISTANCE + 1) + 0.5) continue;
 
-					if (HashMap_get(world->chunkmap, Chunk_hash_pos(x, z))) continue;
-					if (HashSet_contains(world->scheduledLoadChunks, Chunk_hash_pos(x, z))) continue;
-					LinkedList_prepend(world->chunkLoadQueue, new_Int2(x, z));
+					if(HashSet_contains(world->scheduledLoadChunks, Chunk_hash_pos(x, z))) continue;
 					HashSet_insert(world->scheduledLoadChunks, Chunk_hash_pos(x, z));
+					LinkedList_prepend(world->chunkLoadQueue, new_Int2(x, z));
 				}
 			}
+		}
+	}
+
+	for (int i = 0; i < world->chunks->count; i++) { //unload chunks out of render distance
+		Chunk c = (Chunk)List_get(world->chunks, i);
+		if (!c) continue;
+		double camDistance = sqrt((double)((c->posX - camX) * (c->posX - camX) + (c->posZ - camZ) * (c->posZ - camZ)));
+		if (camDistance > (double)(RENDER_DISTANCE + 1) + 0.5) {
+			List_remove(world->chunks, i);
+			HashMap_remove(world->chunkmap, Chunk_hash(c));
+			HashSet_remove(world->scheduledLoadChunks, Chunk_hash(c));
+			Chunk_free(c);
 		}
 	}
 
@@ -262,6 +234,16 @@ void World_update(World world) {
 	}
 	QSList(world->chunks, compare, 0, world->chunks->count - 1);
 	free(compare);
+}
+
+inline Chunk ChunkGetOrLoad(World world, int x, int z) {
+	Chunk c = (Chunk)HashMap_get(world->chunkmap, Chunk_hash_pos(x, z));
+	if (!c) {
+		c = Chunk_generate(world, x, z);
+		List_add(world->chunks, c);
+		HashMap_insert_at(world->chunkmap, Chunk_hash(c), c);
+	}
+	return c;
 }
 
 void QSList(List in, float* compare, int lowIndx, int hiIndx) {

@@ -3,6 +3,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <math.h>
 #include "chunk.h"
 #include "atlas.h"
@@ -10,13 +11,13 @@
 #include "main.h"
 #include "blockdef.h"
 
-#define LIGHT_AMT_TOP 1.0
-#define LIGHT_AMT_BOTTOM 0.6
-#define LIGHT_AMT_FRONT 0.8
-#define LIGHT_AMT_BACK 0.6
-#define LIGHT_AMT_RIGHT 0.7
-#define LIGHT_AMT_LEFT 0.9
 #define DEBUG_COLOR_CHUNK_BORDERS 0
+static unsigned int LIGHT_AMT_TOP = 15;
+static unsigned int LIGHT_AMT_BOTTOM = 9;
+static unsigned int LIGHT_AMT_FRONT = 12;
+static unsigned int LIGHT_AMT_BACK = 10;
+static unsigned int LIGHT_AMT_RIGHT = 11;
+static unsigned int LIGHT_AMT_LEFT = 14;
 
 unsigned int createCube();
 Chunk new_Chunk() {
@@ -98,6 +99,7 @@ Chunk Chunk_generate(World world, int xPos, int zPos) {
 				}
 				else if (y < height) {
 					if (oceanMapVal > 0.34 || (oceanMapVal >= 0.34 && y < 62)) chunk->data[x][z][y] = (char)BLOCK_DIRT;
+					else if (oceanMapVal < 0.34 || y < 66) chunk->data[x][z][y] = (char)BLOCK_SAND;
 					else chunk->data[x][z][y] = (char)BLOCK_STONE;
 				}
 				else if (y == height) {
@@ -134,7 +136,7 @@ void Chunk_updatemesh(Chunk chunk, Chunk neighboringData[4]) {
 			}
 		}
 	}
-	float* vertices = (float*)malloc(faceCt * 32 * sizeof(float)); //8 floats, 4 vertices per face
+	float* vertices = (float*)malloc(faceCt * 4 * sizeof(float)); //4 vertices per face
 	unsigned int* indices = (unsigned int*)malloc(faceCt * 6 * sizeof(unsigned int)); //6 indicies per face
 	int block = 0;
 	int face = 0;
@@ -145,249 +147,168 @@ void Chunk_updatemesh(Chunk chunk, Chunk neighboringData[4]) {
 			for (int y = 0; y < 256; y++) {
 				int currentBlockType = (int)chunk->data[x][z][y];
 				if (!currentBlockType) continue;
-				float _x = (float)x; float _y = (float)y; float _z = (float)z;
 
-				//vertex colors
-				float colX, colY, colZ;
-				colX = colY = colZ = 1.0f;
-
+				GLubyte _x = x; 
+				GLubyte _y = y;
+				GLubyte _z = z;
 				int i = face * 6;
-				int v = face * 32;
-				int vertex = face * 4;
+				int v = face * 4;
 				if (y == 255 || !(int)chunk->data[x][z][y + 1]) { //top face
-					float* texCoords = TextureAtlas_getFaceCoords(currentBlockType, BLOCKFACE_TOP);
-					for (int k = 0; k < 4; k++) { 
-						//color
-						vertices[v + k * 8 + 3] = LIGHT_AMT_TOP * colX;
-						vertices[v + k * 8 + 4] = LIGHT_AMT_TOP * colY;
-						vertices[v + k * 8 + 5] = LIGHT_AMT_TOP * colZ;
+					
+					GLubyte* texCoords = TextureAtlas_getFaceCoords(currentBlockType, BLOCKFACE_TOP);
 
-						if (DEBUG_COLOR_CHUNK_BORDERS && (x == 0 || x == 15 || z == 0 || z == 15)) {
-							vertices[v + k * 8 + 3] = 0.0;
-							vertices[v + k * 8 + 4] = 0.0;
-							vertices[v + k * 8 + 5] = 0.0;
-						}
+					vertices[v + 0] = (float)((_x + 0) | ((_y + 1) << 5u) | ((_z + 1) << 14u) | (texCoords[0] << 19u));
+					vertices[v + 1] = (float)((_x + 1) | ((_y + 1) << 5u) | ((_z + 1) << 14u) | (texCoords[1] << 19u));
+					vertices[v + 2] = (float)((_x + 1) | ((_y + 1) << 5u) | ((_z + 0) << 14u) | (texCoords[2] << 19u));
+					vertices[v + 3] = (float)((_x + 0) | ((_y + 1) << 5u) | ((_z + 0) << 14u) | (texCoords[3] << 19u));
 
-						//tex coordinates
-						vertices[v + k * 8 + 6] = texCoords[k * 2];
-						vertices[v + k * 8 + 7] = texCoords[k * 2 + 1];
-					}
 					free(texCoords);
 
-					vertices[v + 0] = _x - 0.5f; vertices[v + 1] = _y + 0.5f; vertices[v + 2] = _z + 0.5f;
-					vertices[v + 8] = _x + 0.5f; vertices[v + 9] = _y + 0.5f; vertices[v + 10] = _z + 0.5f;
-					vertices[v + 16] = _x + 0.5f; vertices[v + 17] = _y + 0.5f; vertices[v + 18] = _z - 0.5f;
-					vertices[v + 24] = _x - 0.5f; vertices[v + 25] = _y + 0.5f; vertices[v + 26] = _z - 0.5f;
-					
-					indices[i + 0] = vertex + 0; indices[i + 1] = vertex + 1; indices[i + 2] = vertex + 2;
-					indices[i + 3] = vertex + 0; indices[i + 4] = vertex + 2; indices[i + 5] = vertex + 3;
+					indices[i + 0] = v + 0; indices[i + 1] = v + 1; indices[i + 2] = v + 2;
+					indices[i + 3] = v + 0; indices[i + 4] = v + 2; indices[i + 5] = v + 3;
 					i += 6;
-					v += 32;
-					vertex += 4;
+					v += 4;
 					face++;
 				}
 				if (y == 0 || !(int)chunk->data[x][z][y - 1]) { //bottom face
-					float* texCoords = TextureAtlas_getFaceCoords(currentBlockType, BLOCKFACE_BOTTOM);
-					for (int k = 0; k < 4; k++) {
-						//color
-						vertices[v + k * 8 + 3] = LIGHT_AMT_BOTTOM * colX;
-						vertices[v + k * 8 + 4] = LIGHT_AMT_BOTTOM * colY;
-						vertices[v + k * 8 + 5] = LIGHT_AMT_BOTTOM * colZ;
+					GLubyte* texCoords = TextureAtlas_getFaceCoords(currentBlockType, BLOCKFACE_BOTTOM);
 
-						//tex coordinates
-						vertices[v + k * 8 + 6] = texCoords[k * 2];
-						vertices[v + k * 8 + 7] = texCoords[k * 2 + 1];
-					}
+					vertices[v + 0] = (float)((_x + 0) | ((_y + 0) << 5) | ((_z + 1) << 14) | (texCoords[0] << 19));
+					vertices[v + 1] = (float)((_x + 1) | ((_y + 0) << 5) | ((_z + 1) << 14) | (texCoords[1] << 19));
+					vertices[v + 2] = (float)((_x + 1) | ((_y + 0) << 5) | ((_z + 0) << 14) | (texCoords[2] << 19));
+					vertices[v + 3] = (float)((_x + 0) | ((_y + 0) << 5) | ((_z + 0) << 14) | (texCoords[3] << 19));
+
 					free(texCoords);
 
-					vertices[v + 0] = _x - 0.5f; vertices[v + 1] = _y - 0.5f; vertices[v + 2] = _z + 0.5f;
-					vertices[v + 8] = _x + 0.5f; vertices[v + 9] = _y - 0.5f; vertices[v + 10] = _z + 0.5f;
-					vertices[v + 16] = _x + 0.5f; vertices[v + 17] = _y - 0.5f; vertices[v + 18] = _z - 0.5f;
-					vertices[v + 24] = _x - 0.5f; vertices[v + 25] = _y - 0.5f; vertices[v + 26] = _z - 0.5f;
-
-					indices[i + 0] = vertex + 0; indices[i + 1] = vertex + 2; indices[i + 2] = vertex + 1;
-					indices[i + 3] = vertex + 0; indices[i + 4] = vertex + 3; indices[i + 5] = vertex + 2;
+					indices[i + 0] = v + 0; indices[i + 1] = v + 2; indices[i + 2] = v + 1;
+					indices[i + 3] = v + 0; indices[i + 4] = v + 3; indices[i + 5] = v + 2;
 					i += 6;
-					v += 32;
-					vertex += 4;
+					v += 4;
 					face++;
 				}
 				if (x > 0 && !(int)chunk->data[x - 1][z][y] || x == 0 && !(int)neighboringData[0]->data[15][z][y]) { //left face
-					float* texCoords = TextureAtlas_getFaceCoords(currentBlockType, BLOCKFACE_LEFT);
-					for (int k = 0; k < 4; k++) {
-						//color
-						vertices[v + k * 8 + 3] = LIGHT_AMT_LEFT * colX;
-						vertices[v + k * 8 + 4] = LIGHT_AMT_LEFT * colY;
-						vertices[v + k * 8 + 5] = LIGHT_AMT_LEFT * colZ;
+					GLubyte* texCoords = TextureAtlas_getFaceCoords(currentBlockType, BLOCKFACE_LEFT);
 
-						//tex coordinates
-						vertices[v + k * 8 + 6] = texCoords[k * 2];
-						vertices[v + k * 8 + 7] = texCoords[k * 2 + 1];
-					}
+					vertices[v + 0] = (float)((_x + 0) | ((_y + 1) << 5) | ((_z + 0) << 14) | (texCoords[0] << 19));
+					vertices[v + 1] = (float)((_x + 0) | ((_y + 1) << 5) | ((_z + 1) << 14) | (texCoords[1] << 19));
+					vertices[v + 2] = (float)((_x + 0) | ((_y + 0) << 5) | ((_z + 1) << 14) | (texCoords[2] << 19));
+					vertices[v + 3] = (float)((_x + 0) | ((_y + 0) << 5) | ((_z + 0) << 14) | (texCoords[3] << 19));
+
 					free(texCoords);
 
-					vertices[v + 0] = _x - 0.5f; vertices[v + 1] = _y + 0.5f; vertices[v + 2] = _z - 0.5f;
-					vertices[v + 8] = _x - 0.5f; vertices[v + 9] = _y + 0.5f; vertices[v + 10] = _z + 0.5f;
-					vertices[v + 16] = _x - 0.5f; vertices[v + 17] = _y - 0.5f; vertices[v + 18] = _z + 0.5f;
-					vertices[v + 24] = _x - 0.5f; vertices[v + 25] = _y - 0.5f; vertices[v + 26] = _z - 0.5f;
-
-					indices[i + 0] = vertex + 0; indices[i + 1] = vertex + 2; indices[i + 2] = vertex + 1;
-					indices[i + 3] = vertex + 0; indices[i + 4] = vertex + 3; indices[i + 5] = vertex + 2;
+					indices[i + 0] = v + 0; indices[i + 1] = v + 2; indices[i + 2] = v + 1;
+					indices[i + 3] = v + 0; indices[i + 4] = v + 3; indices[i + 5] = v + 2;
 					i += 6;
-					v += 32;
-					vertex += 4;
+					v += 4;
 					face++;
 				}
 				if (x < 15 && !(int)chunk->data[x + 1][z][y] || x == 15 && !(int)neighboringData[1]->data[0][z][y]) { //right face
-					float* texCoords = TextureAtlas_getFaceCoords(currentBlockType, BLOCKFACE_RIGHT);
-					for (int k = 0; k < 4; k++) {
-						//color
-						vertices[v + k * 8 + 3] = LIGHT_AMT_RIGHT * colX;
-						vertices[v + k * 8 + 4] = LIGHT_AMT_RIGHT * colY;
-						vertices[v + k * 8 + 5] = LIGHT_AMT_RIGHT * colZ;
+					GLubyte* texCoords = TextureAtlas_getFaceCoords(currentBlockType, BLOCKFACE_RIGHT);
 
-						//tex coordinates
-						vertices[v + k * 8 + 6] = texCoords[k * 2];
-						vertices[v + k * 8 + 7] = texCoords[k * 2 + 1];
-					}
+					vertices[v + 0] = (float)((_x + 1) | ((_y + 1) << 5) | ((_z + 0) << 14) | (texCoords[0] << 19));
+					vertices[v + 1] = (float)((_x + 1) | ((_y + 1) << 5) | ((_z + 1) << 14) | (texCoords[1] << 19));
+					vertices[v + 2] = (float)((_x + 1) | ((_y + 0) << 5) | ((_z + 1) << 14) | (texCoords[2] << 19));
+					vertices[v + 3] = (float)((_x + 1) | ((_y + 0) << 5) | ((_z + 0) << 14) | (texCoords[3] << 19));
+
 					free(texCoords);
 
-					vertices[v + 0] = _x + 0.5f; vertices[v + 1] = _y + 0.5f; vertices[v + 2] = _z - 0.5f;
-					vertices[v + 8] = _x + 0.5f; vertices[v + 9] = _y + 0.5f; vertices[v + 10] = _z + 0.5f;
-					vertices[v + 16] = _x + 0.5f; vertices[v + 17] = _y - 0.5f; vertices[v + 18] = _z + 0.5f;
-					vertices[v + 24] = _x + 0.5f; vertices[v + 25] = _y - 0.5f; vertices[v + 26] = _z - 0.5f;
-
-					indices[i + 0] = vertex + 0; indices[i + 1] = vertex + 1; indices[i + 2] = vertex + 2;
-					indices[i + 3] = vertex + 0; indices[i + 4] = vertex + 2; indices[i + 5] = vertex + 3;
+					indices[i + 0] = v + 0; indices[i + 1] = v + 1; indices[i + 2] = v + 2;
+					indices[i + 3] = v + 0; indices[i + 4] = v + 2; indices[i + 5] = v + 3;
 					i += 6;
-					v += 32;
-					vertex += 4;
+					v += 4;
 					face++;
 				}
 				if (z < 15 && !(int)chunk->data[x][z + 1][y] || z == 15 && !(int)neighboringData[3]->data[x][0][y]) { //front face
-					float* texCoords = TextureAtlas_getFaceCoords(currentBlockType, BLOCKFACE_FRONT);
-					for (int k = 0; k < 4; k++) {
-						//color
-						vertices[v + k * 8 + 3] = LIGHT_AMT_FRONT * colX;
-						vertices[v + k * 8 + 4] = LIGHT_AMT_FRONT * colY;
-						vertices[v + k * 8 + 5] = LIGHT_AMT_FRONT * colZ;
+					GLubyte* texCoords = TextureAtlas_getFaceCoords(currentBlockType, BLOCKFACE_FRONT);
 
-						//tex coordinates
-						vertices[v + k * 8 + 6] = texCoords[k * 2];
-						vertices[v + k * 8 + 7] = texCoords[k * 2 + 1];
-					}
+					vertices[v + 0] = (float)((_x + 0) | ((_y + 1) << 5) | ((_z + 1) << 14) | (texCoords[0] << 19));
+					vertices[v + 1] = (float)((_x + 1) | ((_y + 1) << 5) | ((_z + 1) << 14) | (texCoords[1] << 19));
+					vertices[v + 2] = (float)((_x + 1) | ((_y + 0) << 5) | ((_z + 1) << 14) | (texCoords[2] << 19));
+					vertices[v + 3] = (float)((_x + 0) | ((_y + 0) << 5) | ((_z + 1) << 14) | (texCoords[3] << 19));
+
 					free(texCoords);
-
-					vertices[v + 0] = _x - 0.5f; vertices[v + 1] = _y + 0.5f; vertices[v + 2] = _z + 0.5f;
-					vertices[v + 8] = _x + 0.5f; vertices[v + 9] = _y + 0.5f; vertices[v + 10] = _z + 0.5f;
-					vertices[v + 16] = _x + 0.5f; vertices[v + 17] = _y - 0.5f; vertices[v + 18] = _z + 0.5f;
-					vertices[v + 24] = _x - 0.5f; vertices[v + 25] = _y - 0.5f; vertices[v + 26] = _z + 0.5f;
-
-					indices[i + 0] = vertex + 0; indices[i + 1] = vertex + 2; indices[i + 2] = vertex + 1;
-					indices[i + 3] = vertex + 0; indices[i + 4] = vertex + 3; indices[i + 5] = vertex + 2;
+					
+					indices[i + 0] = v + 0; indices[i + 1] = v + 2; indices[i + 2] = v + 1;
+					indices[i + 3] = v + 0; indices[i + 4] = v + 3; indices[i + 5] = v + 2;
 					i += 6;
-					v += 32;
-					vertex += 4;
+					v += 4;
 					face++;
 				}
 				if (z > 0 && !(int)chunk->data[x][z - 1][y] || z == 0 && !(int)neighboringData[2]->data[x][15][y]) { //back face
-					float* texCoords = TextureAtlas_getFaceCoords(currentBlockType, BLOCKFACE_BACK);
-					for (int k = 0; k < 4; k++) {
-						//color
-						vertices[v + k * 8 + 3] = LIGHT_AMT_BACK * colX;
-						vertices[v + k * 8 + 4] = LIGHT_AMT_BACK * colY;
-						vertices[v + k * 8 + 5] = LIGHT_AMT_BACK * colZ;
+					GLubyte* texCoords = TextureAtlas_getFaceCoords(currentBlockType, BLOCKFACE_BACK);
 
-						//tex coordinates
-						vertices[v + k * 8 + 6] = texCoords[k * 2];
-						vertices[v + k * 8 + 7] = texCoords[k * 2 + 1];
-					}
+					vertices[v + 0] = (float)((_x + 0) | ((_y + 1) << 5) | ((_z + 0) << 14) | (texCoords[0] << 19));
+					vertices[v + 1] = (float)((_x + 1) | ((_y + 1) << 5) | ((_z + 0) << 14) | (texCoords[1] << 19));
+					vertices[v + 2] = (float)((_x + 1) | ((_y + 0) << 5) | ((_z + 0) << 14) | (texCoords[2] << 19));
+					vertices[v + 3] = (float)((_x + 0) | ((_y + 0) << 5) | ((_z + 0) << 14) | (texCoords[3] << 19));
+
 					free(texCoords);
 
-					vertices[v + 0] = _x - 0.5f; vertices[v + 1] = _y + 0.5f; vertices[v + 2] = _z - 0.5f;
-					vertices[v + 8] = _x + 0.5f; vertices[v + 9] = _y + 0.5f; vertices[v + 10] = _z - 0.5f;
-					vertices[v + 16] = _x + 0.5f; vertices[v + 17] = _y - 0.5f; vertices[v + 18] = _z - 0.5f;
-					vertices[v + 24] = _x - 0.5f; vertices[v + 25] = _y - 0.5f; vertices[v + 26] = _z - 0.5f;
-
-					indices[i + 0] = vertex + 0; indices[i + 1] = vertex + 1; indices[i + 2] = vertex + 2;
-					indices[i + 3] = vertex + 0; indices[i + 4] = vertex + 2; indices[i + 5] = vertex + 3;
+					indices[i + 0] = v + 0; indices[i + 1] = v + 1; indices[i + 2] = v + 2;
+					indices[i + 3] = v + 0; indices[i + 4] = v + 2; indices[i + 5] = v + 3;
 					i += 6;
-					v += 32;
-					vertex += 4;
+					v += 4;
 					face++;
 				}
 				block++;
 			}
 		}
 	}
-
 	//generate water faces
 	for (int x = 0; x < 16; x++) {
 		for (int z = 0; z < 16; z++) {
 			if (chunk->data[x][z][63]) continue;
-			float _x = (float)x; float _y = 63.0; float _z = (float)z;
-
-			//vertex colors
-			float colX, colY, colZ;
-			colX = colY = colZ = 1.0f;
+			GLubyte _x = x;
+			GLubyte _y = 63;
+			GLubyte _z = z;
 
 			int i = face * 6;
-			int v = face * 32;
+			int v = face * 4;
 			int vertex = face * 4;
 
-			float* texCoords = TextureAtlas_getFaceCoords(BLOCK_WATER, BLOCKFACE_TOP);
-			for (int k = 0; k < 4; k++) {
-				//color
-				vertices[v + k * 8 + 3] = LIGHT_AMT_TOP * colX;
-				vertices[v + k * 8 + 4] = LIGHT_AMT_TOP * colY;
-				vertices[v + k * 8 + 5] = LIGHT_AMT_TOP * colZ;
-
-				//tex coordinates
-				vertices[v + k * 8 + 6] = texCoords[k * 2];
-				vertices[v + k * 8 + 7] = texCoords[k * 2 + 1];
-			}
-			free(texCoords);
+			GLubyte* texCoords = TextureAtlas_getFaceCoords(BLOCK_WATER, BLOCKFACE_TOP);
 
 			vertices[v + 0] = _x - 0.5f; vertices[v + 1] = _y + 0.4f; vertices[v + 2] = _z + 0.5f;
-			vertices[v + 8] = _x + 0.5f; vertices[v + 9] = _y + 0.4f; vertices[v + 10] = _z + 0.5f;
-			vertices[v + 16] = _x + 0.5f; vertices[v + 17] = _y + 0.4f; vertices[v + 18] = _z - 0.5f;
-			vertices[v + 24] = _x - 0.5f; vertices[v + 25] = _y + 0.4f; vertices[v + 26] = _z - 0.5f;
+			vertices[v + 5] = _x + 0.5f; vertices[v + 6] = _y + 0.4f; vertices[v + 7] = _z + 0.5f;
+			vertices[v + 10] = _x + 0.5f; vertices[v + 11] = _y + 0.4f; vertices[v + 12] = _z - 0.5f;
+			vertices[v + 15] = _x - 0.5f; vertices[v + 16] = _y + 0.4f; vertices[v + 17] = _z - 0.5f;
 
-			indices[i + 0] = vertex + 0; indices[i + 1] = vertex + 1; indices[i + 2] = vertex + 2;
-			indices[i + 3] = vertex + 0; indices[i + 4] = vertex + 2; indices[i + 5] = vertex + 3;
-			i += 6;
-			v += 32;
-			vertex += 4;
+			vertices[v + 0] = (float)((_x + 0) | ((_y + 1) << 5) | ((_z + 1) << 14) | (texCoords[0] << 19));
+			vertices[v + 1] = (float)((_x + 1) | ((_y + 1) << 5) | ((_z + 1) << 14) | (texCoords[1] << 19));
+			vertices[v + 2] = (float)((_x + 1) | ((_y + 1) << 5) | ((_z + 0) << 14) | (texCoords[2] << 19));
+			vertices[v + 3] = (float)((_x + 0) | ((_y + 1) << 5) | ((_z + 0) << 14) | (texCoords[3] << 19));
+
+			free(texCoords);
+
+			indices[i + 0] = v + 0; indices[i + 1] = v + 1; indices[i + 2] = v + 2;
+			indices[i + 3] = v + 0; indices[i + 4] = v + 2; indices[i + 5] = v + 3;
+
 			face++;
 		}
 	}
-
 	unsigned int VBO;
 	glGenBuffers(1, &VBO);
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	unsigned int EBO;
 	glGenBuffers(1, &EBO);
 
-	unsigned int vao = 0;
-	glGenVertexArrays(1, &vao);
-	glBindVertexArray(vao);
+	unsigned int VAO = 0;
+	glGenVertexArrays(1, &VAO);
+	glBindVertexArray(VAO);
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 32 * faceCt, vertices, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 4 * faceCt, vertices, GL_STATIC_DRAW);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * 6 * faceCt, indices, GL_STATIC_DRAW);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0); //vertex positions
+	glVertexAttribPointer(0, 1, GL_FLOAT, GL_FALSE, 0, (void*)0); //vertex positions
 	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float))); //vertex colors
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float))); //vertex tex coords
-	glEnableVertexAttribArray(2);
-	chunk->renderer->VAO = vao;
+	chunk->renderer->VAO = VAO;
 	chunk->renderer->VBO = VBO;
 	chunk->renderer->EBO = EBO;
 	chunk->renderer->indexCount = faceCt * 6;
 
 	free(vertices);
 	free(indices);
+
 	chunk->setMesh = 1;
 }
 

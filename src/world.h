@@ -37,13 +37,13 @@ typedef struct World {
 	HashSet scheduledLoadChunks;
 
 	//set of Int2(int) for chunks that request a mesh update
-	HashSet scheduledMeshUpdateChunks;
+	//HashSet scheduledMeshUpdateChunks;
 
 	//queue of Int2's of chunk positions that request generation/load
 	LinkedList chunkLoadQueue;
 
 	//queue of Int2's of chunk positions that request a mesh update
-	LinkedList chunkMeshUpdateQueue;
+	//LinkedList chunkMeshUpdateQueue;
 
 	//shader shared by all chunks
 	Shader chunkShader;

@@ -61,10 +61,12 @@ void LinkedList_prepend(LinkedList list, void* data) {
 }
 
 LinkedListNode LinkedList_getfirst(LinkedList list) {
+	if (!list->count) return NULL;
 	return list->head->next;
 }
 
 LinkedListNode LinkedList_getlast(LinkedList list) {
+	if (!list->count) return NULL;
 	return list->tail->prev;
 }
 
@@ -86,6 +88,11 @@ LinkedListNode LinkedList_polllast(LinkedList list) {
 	return node;
 }
 
+void LinkedList_remove(LinkedList list, LinkedListNode node) {
+	node->prev->next = node->next;
+	node->next->prev = node->prev;
+	list->count--;
+}
 
 //Integer Linked List
 

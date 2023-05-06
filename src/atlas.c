@@ -47,6 +47,7 @@ void TextureAtlas_init() {
 	//parse blockinfo file and populate blockData
 	parseBlockInfo();
 
+	/*
 	cellWidth = (float)ATLAS_CELL_WIDTH / (float)width;
 	cellHeight = (float)ATLAS_CELL_HEIGHT / (float)height;
 
@@ -56,7 +57,7 @@ void TextureAtlas_init() {
 			blockData[i]->faces[j]->x *= cellWidth;
 			blockData[i]->faces[j]->y *= cellHeight;
 		}
-	}
+	}*/
 }
 
 void TextureAtlas_free() {
@@ -73,76 +74,61 @@ void BlockInfo_free(BlockInfo block) {
 	free(block);
 }
 
-float* TextureAtlas_getFaceCoords(BLOCK_TYPE block, ATLAS_BLOCKFACE face) {
-	float* result = (float*)malloc(8 * sizeof(float));
+GLubyte* TextureAtlas_getFaceCoords(BLOCK_TYPE block, ATLAS_BLOCKFACE face) {
+	GLubyte* result = (GLubyte*)malloc(4 * sizeof(char));
 
-	// if random orientation
+	// if random orientation. denoting permutations in S_4 in disjoint cycle notation (zero-indexed).
 	int r = blockData[block]->faces[face]->randRotation ? rand() % 4 : 0;
+	int base_tl = 16 * blockData[block]->faces[face]->y + blockData[block]->faces[face]->x;
 	if (r == 0) {
-		result[0] = blockData[block]->faces[face]->x;  //top left
-		result[1] = blockData[block]->faces[face]->y;
-		result[2] = result[0] + cellWidth;		//top right
-		result[3] = result[1];
-		result[4] = result[2];				    //bottom right
-		result[5] = result[1] + cellWidth;
-		result[6] = result[0];					//bottom left
-		result[7] = result[5];
+		//permutation ()
+		result[0] = (GLubyte)(base_tl + 0);		//top left
+		result[1] = (GLubyte)(base_tl + 1);		//top right
+		result[2] = (GLubyte)(base_tl + 17);	//bottom right
+		result[3] = (GLubyte)(base_tl + 16);	//bottom left
 	}
 	else if (r == 1) {
-		result[2] = blockData[block]->faces[face]->x;  //top left
-		result[3] = blockData[block]->faces[face]->y;
-		result[4] = result[2] + cellWidth;		//top right
-		result[5] = result[3];
-		result[6] = result[4];				    //bottom right
-		result[7] = result[3] + cellWidth;
-		result[0] = result[2];					//bottom left
-		result[1] = result[7];
+		//permutation (0123)
+		result[0] = (GLubyte)(base_tl + 1);
+		result[1] = (GLubyte)(base_tl + 17);
+		result[2] = (GLubyte)(base_tl + 16);
+		result[3] = (GLubyte)(base_tl + 0);
 	}
 	else if (r == 2) {
-		result[4] = blockData[block]->faces[face]->x;  //top left
-		result[5] = blockData[block]->faces[face]->y;
-		result[6] = result[4] + cellWidth;		//top right
-		result[7] = result[5];
-		result[0] = result[6];				    //bottom right
-		result[1] = result[5] + cellWidth;
-		result[2] = result[4];					//bottom left
-		result[3] = result[1];
+		//permutation (02)(13)
+		result[0] = (GLubyte)(base_tl + 17);
+		result[1] = (GLubyte)(base_tl + 16);
+		result[2] = (GLubyte)(base_tl + 0);
+		result[3] = (GLubyte)(base_tl + 1);
 	}
 	else if (r == 3) {
-		result[6] = blockData[block]->faces[face]->x;  //top left
-		result[7] = blockData[block]->faces[face]->y;
-		result[0] = result[6] + cellWidth;		//top right
-		result[1] = result[7];
-		result[2] = result[0];				    //bottom right
-		result[3] = result[7] + cellWidth;
-		result[4] = result[6];					//bottom left
-		result[5] = result[3];
+		//permutation (0321)
+		result[0] = (GLubyte)(base_tl + 16);
+		result[1] = (GLubyte)(base_tl + 0);
+		result[2] = (GLubyte)(base_tl + 1);
+		result[3] = (GLubyte)(base_tl + 17);
 	}
 
 	//flip x randomly
 	r = blockData[block]->faces[face]->randFlipX ? rand() % 2 : 0;
-	if (r) { //permutation (01)(23)
-		float tx = result[0]; float ty = result[1];
-		result[0] = result[2];
-		result[1] = result[3];
-		result[2] = tx; result[3] = ty;
-		tx = result[4]; ty = result[5];
-		result[4] = result[6]; 
-		result[5] = result[7];
-		result[6] = tx; result[7] = ty;
+	if (r) {
+		//permutation (01)(23)
+		char t0 = result[0]; char t2 = result[2];
+		result[0] = result[1];
+		result[1] = t0;
+		result[2] = result[3];
+		result[3] = t2;
 	}
 
 	//flip y randomly
 	r = blockData[block]->faces[face]->randFlipY ? rand() % 2 : 0;
-	if (r) { //permutation (03)(12)
-		float tx = result[0]; float ty = result[1];
-		result[0] = result[6];
-		result[1] = result[7];
-		result[6] = tx; result[7] = ty;
-		tx = result[2]; ty = result[3];
-		result[2] = result[4];
-		result[3] = result[5];
-		result[4] = tx; result[5] = ty;
+	if (r) { 
+		//permutation (03)(12)
+		char t0 = result[0]; char t1 = result[1];
+		result[0] = result[3];
+		result[3] = t0;
+		result[1] = result[2];
+		result[2] = t1;
 	}
 
 	return result;
