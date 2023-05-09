@@ -14,7 +14,7 @@ Mat4x4 new_Mat4x4() {
 	return this;
 }
 void Mat4x4_free(Mat4x4 matrix) {
-	free(matrix);
+	if (matrix) free(matrix);
 }
 
 Vec3 new_Vec3(float x, float y, float z) {
@@ -102,12 +102,12 @@ void Int2_free(void* int2) {
 
 //Mat4x4 functions:
 
-Mat4x4 mat4Identity() {
+Mat4x4 Mat4x4_Identity() {
 	Mat4x4 result = new_Mat4x4();
 	for (int i = 0; i < 4; i++) result->data[i][i] = 1.0f;
 	return result;
 }
-Vec4 mat4v4Product(Mat4x4 m, Vec4 v) {
+Vec4 Mat4x4_v4Product(Mat4x4 m, Vec4 v) {
 	return new_Vec4(
 		m->data[0][0] * v->w + m->data[0][1] * v->x + m->data[0][2] * v->y + m->data[0][3] * v->z,
 		m->data[1][0] * v->w + m->data[1][1] * v->x + m->data[1][2] * v->y + m->data[1][3] * v->z,
@@ -115,7 +115,7 @@ Vec4 mat4v4Product(Mat4x4 m, Vec4 v) {
 		m->data[3][0] * v->w + m->data[3][1] * v->x + m->data[3][2] * v->y + m->data[3][3] * v->z
 	);
 }
-Mat4x4 mat4Product(Mat4x4 a, Mat4x4 b) {
+Mat4x4 Mat4x4_Product(Mat4x4 a, Mat4x4 b) {
 	Mat4x4 result = new_Mat4x4();
 	for (int i = 0; i < 4; i++) {
 		for (int j = 0; j < 4; j++) {
@@ -126,7 +126,7 @@ Mat4x4 mat4Product(Mat4x4 a, Mat4x4 b) {
 	}
 	return result;
 }
-Mat4x4 mat4Transpose(Mat4x4 m) {
+Mat4x4 Mat4x4_Transpose(Mat4x4 m) {
 	Mat4x4 result = new_Mat4x4();
 	for (int i = 0; i < 4; i++) {
 		for (int j = 0; j < 4; j++) {
@@ -135,7 +135,7 @@ Mat4x4 mat4Transpose(Mat4x4 m) {
 	}
 	return result;
 }
-void Mat4_print(Mat4x4 m) {
+void Mat4x4_Print(Mat4x4 m) {
 	printf("\n==================\n %f    %f    %f     %f\n %f    %f    %f     %f\n %f    %f    %f     %f\n %f    %f    %f     %f\n",
 		m->data[0][0], m->data[0][1], m->data[0][2], m->data[0][3],
 		m->data[1][0], m->data[1][1], m->data[1][2], m->data[1][3],
@@ -150,14 +150,14 @@ Mat4x4 mat4Scale(float x, float y, float z) {
 	result->data[3][3] = 1.0f;
 	return result;
 }
-Mat4x4 mat4Translate(float x, float y, float z) {
-	Mat4x4 result = mat4Identity();
+Mat4x4 Mat4x4_Translate(float x, float y, float z) {
+	Mat4x4 result = Mat4x4_Identity();
 	result->data[3][0] = x;
 	result->data[3][1] = y;
 	result->data[3][2] = z;
 	return result;
 }
-Mat4x4 mat4RotateX(float t) {
+Mat4x4 Mat4x4_RotateX(float t) {
 	t = t * M_PI / 180.f;
 	Mat4x4 result = new_Mat4x4();
 	result->data[0][0] = 1.0f;
@@ -168,7 +168,7 @@ Mat4x4 mat4RotateX(float t) {
 	result->data[2][2] = cosf(t);
 	return result;
 }
-Mat4x4 mat4RotateY(float t) {
+Mat4x4 Mat4x4_RotateY(float t) {
 	t = t * M_PI / 180.f;
 	Mat4x4 result = new_Mat4x4();
 	result->data[1][1] = 1.0f;
@@ -179,7 +179,7 @@ Mat4x4 mat4RotateY(float t) {
 	result->data[2][2] = cosf(t);
 	return result;
 }
-Mat4x4 mat4RotateZ(float t) {
+Mat4x4 Mat4x4_RotateZ(float t) {
 	t = t * M_PI / 180.f;
 	Mat4x4 result = new_Mat4x4();
 	result->data[2][2] = 1.0f;
@@ -188,5 +188,29 @@ Mat4x4 mat4RotateZ(float t) {
 	result->data[0][1] = sinf(t);
 	result->data[1][0] = -sinf(t);
 	result->data[1][1] = cosf(t);
+	return result;
+}
+
+Mat4x4 Mat4x4_ViewProjOrthographic(float x, float y, float z, float rotX, float rotY, float near, float far, float size) {
+	//View Matrix
+	Mat4x4 camTr = Mat4x4_Translate(-x, -y, z);
+	Mat4x4 camRotX = Mat4x4_RotateX(rotX);
+	Mat4x4 camRotY = Mat4x4_RotateY(rotY - 180.0f);
+	Mat4x4 rotMatrix = Mat4x4_Product(camRotY, camRotX);
+	Mat4x4 viewMatrix = Mat4x4_Product(camTr, rotMatrix);
+	free(rotMatrix);  free(camTr); free(camRotX); free(camRotY);
+
+	//Projection Matrix
+	Mat4x4 projMatrix = new_Mat4x4();
+
+	projMatrix->data[0][0] = 1.0f / size;
+	projMatrix->data[1][1] = 1.0f / size;
+	projMatrix->data[2][2] = -2.0f / (far - near);
+	projMatrix->data[3][2] = (-far - near) / (far - near);
+	projMatrix->data[3][3] = 1.0f;
+
+	Mat4x4 result = Mat4x4_Product(viewMatrix, projMatrix);
+	free(projMatrix);
+	free(viewMatrix);
 	return result;
 }

@@ -22,13 +22,10 @@ void RenderComponent_free(RenderComponent renderComponent) {
 
 void RenderComponent_updatetransformmatrix(RenderComponent renderComponent) {
 	free(renderComponent->transform->matrix);
-	renderComponent->transform->matrix = mat4Translate(
+	renderComponent->transform->matrix = Mat4x4_Translate(
 		renderComponent->transform->position->x,
 		renderComponent->transform->position->y, 
 		renderComponent->transform->position->z);
-
-	//set shader matrix uniform
-	if (renderComponent->shader) Shader_setMat4x4(renderComponent->shader, 0, &renderComponent->transform->matrix->data[0][0]);
 }
 
 Transform new_Transform() {
@@ -37,7 +34,7 @@ Transform new_Transform() {
 	this->position = new_Vec3(0.0f, 0.0f, 0.0f);
 	this->rotation = new_Vec3(0.0f, 0.0f, 0.0f);
 	this->scale = new_Vec3(1.0f, 1.0f, 1.0f);
-	this->matrix = mat4Identity();
+	this->matrix = Mat4x4_Identity();
 	return this;
 }
 
@@ -47,7 +44,7 @@ Transform new_Transform_at(float x, float y, float z) {
 	this->position = new_Vec3(x, y, z);
 	this->rotation = new_Vec3(0.0f, 0.0f, 0.0f);
 	this->scale = new_Vec3(1.0f, 1.0f, 1.0f);
-	this->matrix = mat4Identity();
+	this->matrix = Mat4x4_Identity();
 	return this;
 }
 

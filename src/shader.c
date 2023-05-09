@@ -111,7 +111,13 @@ void Shader_setVec2(Shader shader, const char* name, float x, float y) {
 	glUniform2fv(glGetUniformLocation(shader->id, name), 1, val);
 }
 
-void Shader_setMat4x4(Shader shader, int location, const GLfloat* value){
+void Shader_setMat4x4(Shader shader, int location, const GLfloat* value) {
 	Shader_use(shader);
 	glUniformMatrix4fv(Shader_uniformLocations[location], 1, GL_FALSE, value);
 }
+
+/*
+void Shader_setMat4x4(Shader shader, const char* name, const GLfloat* value) {
+	Shader_use(shader);
+	glUniformMatrix4fv(glGetUniformLocation(shader->id, name), 1, GL_FALSE, value);
+}*/

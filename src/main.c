@@ -42,7 +42,7 @@ int main() {
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
 	//create GLFW window
-	window = glfwCreateWindow(SCREEN_DEFAULT_WIDTH, SCREEN_DEFAULT_HEIGHT, "Pixel Simulation", NULL, NULL);
+	window = glfwCreateWindow(SCREEN_DEFAULT_WIDTH, SCREEN_DEFAULT_HEIGHT, "\"Minecraft\"", NULL, NULL);
 	if (window == NULL) {
 		printf("failed to create window\n");
 		glfwTerminate();
@@ -67,6 +67,7 @@ int main() {
 
 	//enable depth testing, backface culling and UBOs
 	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LESS);
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_UNIFORM_BUFFER);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);

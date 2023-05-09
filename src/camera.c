@@ -44,17 +44,16 @@ void Camera_UpdateMatrix() {
 	}
 
 	//View Matrix
-	Mat4x4 camTr = mat4Translate(-camera->position->x, -camera->position->y, camera->position->z);
-	Mat4x4 camRotX = mat4RotateX(camera->targRotation->x);
-	Mat4x4 camRotY = mat4RotateY(camera->targRotation->y - 180.0f);
-	Mat4x4 rotMatrix = mat4Product(camRotY, camRotX);
-	Mat4x4 viewMatrix = mat4Product(camTr, rotMatrix);
+	Mat4x4 camTr = Mat4x4_Translate(-camera->position->x, -camera->position->y, camera->position->z);
+	Mat4x4 camRotX = Mat4x4_RotateX(camera->targRotation->x);
+	Mat4x4 camRotY = Mat4x4_RotateY(camera->targRotation->y - 180.0f);
+	Mat4x4 rotMatrix = Mat4x4_Product(camRotY, camRotX);
+	Mat4x4 viewMatrix = Mat4x4_Product(camTr, rotMatrix);
 	free(camTr); free(camRotX); free(camRotY);
 	
 	//Projection Matrix
 	Mat4x4 projMatrix = new_Mat4x4();
-	//float aspect = (float)PREFERRED_ASPECT_WIDTH / (float)PREFERRED_ASPECT_HEIGHT;
-	float aspect = 1.0f;
+	float aspect = (float)windowX / (float)windowY;
 	float t = 1.0f / tanf(camera->fov / 2.0f);
 	projMatrix->data[0][0] = t / aspect;
 	projMatrix->data[1][1] = t / aspect;
@@ -67,7 +66,7 @@ void Camera_UpdateMatrix() {
 	Mat4x4_free(camera->projMatrix);
 	camera->projMatrix = projMatrix;
 	Mat4x4_free(camera->rotProjMatrix);
-	camera->rotProjMatrix = mat4Product(rotMatrix, projMatrix);
+	camera->rotProjMatrix = Mat4x4_Product(rotMatrix, projMatrix);
 	//free(projMatrix);
 	free(rotMatrix);
 
@@ -101,7 +100,7 @@ void Camera_init() {
 	camera->viewMatrix = new_Mat4x4();
 	camera->projMatrix = new_Mat4x4();
 	camera->rotProjMatrix = new_Mat4x4();
-	camera->position = new_Vec3(0.0f, 75.0f, 0.0f);
+	camera->position = new_Vec3(0.0f, 125.0f, 0.0f);
 	camera->rotation = new_Vec3(90.0f, 180.0f, 0.0f);
 	camera->targPosition = new_Vec3(camera->position->x, camera->position->y, camera->position->z);
 	camera->targRotation = new_Vec3(camera->rotation->x, camera->rotation->y, camera->rotation->z);

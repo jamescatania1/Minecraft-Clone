@@ -64,7 +64,7 @@ Skybox new_Skybox() {
 	if (!this) return NULL;
 
     Shader shader = new_Shader("shaders\\skybox_vert.vshader", "shaders\\skybox_frag.fshader");
-    Shader_uniformLocations[1] = glGetUniformLocation(shader->id, "rotProjMatrix");
+    Shader_uniformLocations[UNIFORM_SKYBOX_MATRIX] = glGetUniformLocation(shader->id, "rotProjMatrix");
     this->renderer = new_RenderComponent(shader, 0, 0, 0, 1);
 
 	glGenTextures(1, &this->renderer->texture);

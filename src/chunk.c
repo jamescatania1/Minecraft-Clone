@@ -12,12 +12,12 @@
 #include "blockdef.h"
 
 #define DEBUG_COLOR_CHUNK_BORDERS 0
-static unsigned int LIGHT_AMT_TOP = 15;
-static unsigned int LIGHT_AMT_BOTTOM = 9;
-static unsigned int LIGHT_AMT_FRONT = 12;
-static unsigned int LIGHT_AMT_BACK = 10;
-static unsigned int LIGHT_AMT_RIGHT = 11;
-static unsigned int LIGHT_AMT_LEFT = 14;
+static unsigned int BLOCKFACE_VAL_TOP = 0;
+static unsigned int BLOCKFACE_VAL_BOTTOM = 1;
+static unsigned int BLOCKFACE_VAL_FRONT = 2;
+static unsigned int BLOCKFACE_VAL_BACK = 3;
+static unsigned int BLOCKFACE_VAL_LEFT = 4;
+static unsigned int BLOCKFACE_VAL_RIGHT = 5;
 
 unsigned int createCube();
 Chunk new_Chunk() {
@@ -157,10 +157,10 @@ void Chunk_updatemesh(Chunk chunk, Chunk neighboringData[4]) {
 					
 					GLubyte* texCoords = TextureAtlas_getFaceCoords(currentBlockType, BLOCKFACE_TOP);
 
-					vertices[v + 0] = (GLuint)(_x + 0 | (_y + 1) << 5u | (_z + 1) << 14u | texCoords[0] << 19u | LIGHT_AMT_TOP << 27u);
-					vertices[v + 1] = (GLuint)(_x + 1 | (_y + 1) << 5u | (_z + 1) << 14u | texCoords[1] << 19u | LIGHT_AMT_TOP << 27u);
-					vertices[v + 2] = (GLuint)(_x + 1 | (_y + 1) << 5u | (_z + 0) << 14u | texCoords[2] << 19u | LIGHT_AMT_TOP << 27u);
-					vertices[v + 3] = (GLuint)(_x + 0 | (_y + 1) << 5u | (_z + 0) << 14u | texCoords[3] << 19u | LIGHT_AMT_TOP << 27u);
+					vertices[v + 0] = (GLuint)(_x + 0 | (_y + 1) << 5u | (_z + 1) << 14u | texCoords[0] << 19u | BLOCKFACE_VAL_TOP << 27u);
+					vertices[v + 1] = (GLuint)(_x + 1 | (_y + 1) << 5u | (_z + 1) << 14u | texCoords[1] << 19u | BLOCKFACE_VAL_TOP << 27u);
+					vertices[v + 2] = (GLuint)(_x + 1 | (_y + 1) << 5u | (_z + 0) << 14u | texCoords[2] << 19u | BLOCKFACE_VAL_TOP << 27u);
+					vertices[v + 3] = (GLuint)(_x + 0 | (_y + 1) << 5u | (_z + 0) << 14u | texCoords[3] << 19u | BLOCKFACE_VAL_TOP << 27u);
 
 					free(texCoords);
 
@@ -173,10 +173,10 @@ void Chunk_updatemesh(Chunk chunk, Chunk neighboringData[4]) {
 				if (y == 0 || !(int)chunk->data[x][z][y - 1]) { //bottom face
 					GLubyte* texCoords = TextureAtlas_getFaceCoords(currentBlockType, BLOCKFACE_BOTTOM);
 
-					vertices[v + 0] = (GLuint)(_x + 0 | (_y + 0) << 5 | (_z + 1) << 14 | texCoords[0] << 19 | LIGHT_AMT_BOTTOM << 27u);
-					vertices[v + 1] = (GLuint)(_x + 1 | (_y + 0) << 5 | (_z + 1) << 14 | texCoords[1] << 19 | LIGHT_AMT_BOTTOM << 27u);
-					vertices[v + 2] = (GLuint)(_x + 1 | (_y + 0) << 5 | (_z + 0) << 14 | texCoords[2] << 19 | LIGHT_AMT_BOTTOM << 27u);
-					vertices[v + 3] = (GLuint)(_x + 0 | (_y + 0) << 5 | (_z + 0) << 14 | texCoords[3] << 19 | LIGHT_AMT_BOTTOM << 27u);
+					vertices[v + 0] = (GLuint)(_x + 0 | (_y + 0) << 5 | (_z + 1) << 14 | texCoords[0] << 19 | BLOCKFACE_VAL_BOTTOM << 27u);
+					vertices[v + 1] = (GLuint)(_x + 1 | (_y + 0) << 5 | (_z + 1) << 14 | texCoords[1] << 19 | BLOCKFACE_VAL_BOTTOM << 27u);
+					vertices[v + 2] = (GLuint)(_x + 1 | (_y + 0) << 5 | (_z + 0) << 14 | texCoords[2] << 19 | BLOCKFACE_VAL_BOTTOM << 27u);
+					vertices[v + 3] = (GLuint)(_x + 0 | (_y + 0) << 5 | (_z + 0) << 14 | texCoords[3] << 19 | BLOCKFACE_VAL_BOTTOM << 27u);
 
 					free(texCoords);
 
@@ -189,10 +189,10 @@ void Chunk_updatemesh(Chunk chunk, Chunk neighboringData[4]) {
 				if (x > 0 && !(int)chunk->data[x - 1][z][y] || x == 0 && !(int)neighboringData[0]->data[15][z][y]) { //left face
 					GLubyte* texCoords = TextureAtlas_getFaceCoords(currentBlockType, BLOCKFACE_LEFT);
 
-					vertices[v + 0] = (GLuint)(_x + 0 | (_y + 1) << 5 | (_z + 0) << 14 | texCoords[0] << 19 | LIGHT_AMT_LEFT << 27u);
-					vertices[v + 1] = (GLuint)(_x + 0 | (_y + 1) << 5 | (_z + 1) << 14 | texCoords[1] << 19 | LIGHT_AMT_LEFT << 27u);
-					vertices[v + 2] = (GLuint)(_x + 0 | (_y + 0) << 5 | (_z + 1) << 14 | texCoords[2] << 19 | LIGHT_AMT_LEFT << 27u);
-					vertices[v + 3] = (GLuint)(_x + 0 | (_y + 0) << 5 | (_z + 0) << 14 | texCoords[3] << 19 | LIGHT_AMT_LEFT << 27u);
+					vertices[v + 0] = (GLuint)(_x + 0 | (_y + 1) << 5 | (_z + 0) << 14 | texCoords[0] << 19 | BLOCKFACE_VAL_LEFT << 27u);
+					vertices[v + 1] = (GLuint)(_x + 0 | (_y + 1) << 5 | (_z + 1) << 14 | texCoords[1] << 19 | BLOCKFACE_VAL_LEFT << 27u);
+					vertices[v + 2] = (GLuint)(_x + 0 | (_y + 0) << 5 | (_z + 1) << 14 | texCoords[2] << 19 | BLOCKFACE_VAL_LEFT << 27u);
+					vertices[v + 3] = (GLuint)(_x + 0 | (_y + 0) << 5 | (_z + 0) << 14 | texCoords[3] << 19 | BLOCKFACE_VAL_LEFT << 27u);
 
 					free(texCoords);
 
@@ -205,10 +205,10 @@ void Chunk_updatemesh(Chunk chunk, Chunk neighboringData[4]) {
 				if (x < 15 && !(int)chunk->data[x + 1][z][y] || x == 15 && !(int)neighboringData[1]->data[0][z][y]) { //right face
 					GLubyte* texCoords = TextureAtlas_getFaceCoords(currentBlockType, BLOCKFACE_RIGHT);
 
-					vertices[v + 0] = (GLuint)(_x + 1 | (_y + 1) << 5 | (_z + 0) << 14 | texCoords[0] << 19 | LIGHT_AMT_RIGHT << 27u);
-					vertices[v + 1] = (GLuint)(_x + 1 | (_y + 1) << 5 | (_z + 1) << 14 | texCoords[1] << 19 | LIGHT_AMT_RIGHT << 27u);
-					vertices[v + 2] = (GLuint)(_x + 1 | (_y + 0) << 5 | (_z + 1) << 14 | texCoords[2] << 19 | LIGHT_AMT_RIGHT << 27u);
-					vertices[v + 3] = (GLuint)(_x + 1 | (_y + 0) << 5 | (_z + 0) << 14 | texCoords[3] << 19 | LIGHT_AMT_RIGHT << 27u);
+					vertices[v + 0] = (GLuint)(_x + 1 | (_y + 1) << 5 | (_z + 0) << 14 | texCoords[0] << 19 | BLOCKFACE_VAL_RIGHT << 27u);
+					vertices[v + 1] = (GLuint)(_x + 1 | (_y + 1) << 5 | (_z + 1) << 14 | texCoords[1] << 19 | BLOCKFACE_VAL_RIGHT << 27u);
+					vertices[v + 2] = (GLuint)(_x + 1 | (_y + 0) << 5 | (_z + 1) << 14 | texCoords[2] << 19 | BLOCKFACE_VAL_RIGHT << 27u);
+					vertices[v + 3] = (GLuint)(_x + 1 | (_y + 0) << 5 | (_z + 0) << 14 | texCoords[3] << 19 | BLOCKFACE_VAL_RIGHT << 27u);
 
 					free(texCoords);
 
@@ -221,10 +221,10 @@ void Chunk_updatemesh(Chunk chunk, Chunk neighboringData[4]) {
 				if (z < 15 && !(int)chunk->data[x][z + 1][y] || z == 15 && !(int)neighboringData[3]->data[x][0][y]) { //front face
 					GLubyte* texCoords = TextureAtlas_getFaceCoords(currentBlockType, BLOCKFACE_FRONT);
 
-					vertices[v + 0] = (GLuint)(_x + 0 | (_y + 1) << 5 | (_z + 1) << 14 | texCoords[0] << 19 | LIGHT_AMT_FRONT << 27u);
-					vertices[v + 1] = (GLuint)(_x + 1 | (_y + 1) << 5 | (_z + 1) << 14 | texCoords[1] << 19 | LIGHT_AMT_FRONT << 27u);
-					vertices[v + 2] = (GLuint)(_x + 1 | (_y + 0) << 5 | (_z + 1) << 14 | texCoords[2] << 19 | LIGHT_AMT_FRONT << 27u);
-					vertices[v + 3] = (GLuint)(_x + 0 | (_y + 0) << 5 | (_z + 1) << 14 | texCoords[3] << 19 | LIGHT_AMT_FRONT << 27u);
+					vertices[v + 0] = (GLuint)(_x + 0 | (_y + 1) << 5 | (_z + 1) << 14 | texCoords[0] << 19 | BLOCKFACE_VAL_FRONT << 27u);
+					vertices[v + 1] = (GLuint)(_x + 1 | (_y + 1) << 5 | (_z + 1) << 14 | texCoords[1] << 19 | BLOCKFACE_VAL_FRONT << 27u);
+					vertices[v + 2] = (GLuint)(_x + 1 | (_y + 0) << 5 | (_z + 1) << 14 | texCoords[2] << 19 | BLOCKFACE_VAL_FRONT << 27u);
+					vertices[v + 3] = (GLuint)(_x + 0 | (_y + 0) << 5 | (_z + 1) << 14 | texCoords[3] << 19 | BLOCKFACE_VAL_FRONT << 27u);
 
 					free(texCoords);
 					
@@ -237,10 +237,10 @@ void Chunk_updatemesh(Chunk chunk, Chunk neighboringData[4]) {
 				if (z > 0 && !(int)chunk->data[x][z - 1][y] || z == 0 && !(int)neighboringData[2]->data[x][15][y]) { //back face
 					GLubyte* texCoords = TextureAtlas_getFaceCoords(currentBlockType, BLOCKFACE_BACK);
 
-					vertices[v + 0] = (GLuint)(_x + 0 | (_y + 1) << 5 | (_z + 0) << 14 | texCoords[0] << 19 | LIGHT_AMT_BACK << 27u);
-					vertices[v + 1] = (GLuint)(_x + 1 | (_y + 1) << 5 | (_z + 0) << 14 | texCoords[1] << 19 | LIGHT_AMT_BACK << 27u);
-					vertices[v + 2] = (GLuint)(_x + 1 | (_y + 0) << 5 | (_z + 0) << 14 | texCoords[2] << 19 | LIGHT_AMT_BACK << 27u);
-					vertices[v + 3] = (GLuint)(_x + 0 | (_y + 0) << 5 | (_z + 0) << 14 | texCoords[3] << 19 | LIGHT_AMT_BACK << 27u);
+					vertices[v + 0] = (GLuint)(_x + 0 | (_y + 1) << 5 | (_z + 0) << 14 | texCoords[0] << 19 | BLOCKFACE_VAL_BACK << 27u);
+					vertices[v + 1] = (GLuint)(_x + 1 | (_y + 1) << 5 | (_z + 0) << 14 | texCoords[1] << 19 | BLOCKFACE_VAL_BACK << 27u);
+					vertices[v + 2] = (GLuint)(_x + 1 | (_y + 0) << 5 | (_z + 0) << 14 | texCoords[2] << 19 | BLOCKFACE_VAL_BACK << 27u);
+					vertices[v + 3] = (GLuint)(_x + 0 | (_y + 0) << 5 | (_z + 0) << 14 | texCoords[3] << 19 | BLOCKFACE_VAL_BACK << 27u);
 
 					free(texCoords);
 
@@ -286,7 +286,6 @@ void Chunk_updatemesh(Chunk chunk, Chunk neighboringData[4]) {
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	unsigned int EBO;
 	glGenBuffers(1, &EBO);
-
 	unsigned int VAO = 0;
 	glGenVertexArrays(1, &VAO);
 	glBindVertexArray(VAO);

@@ -58,23 +58,25 @@ extern Vec4 QuaternionInverse(Vec4 a);
 //Mat4x4 functions:
 
 //Returns identity matrix.
-extern Mat4x4 mat4Identity();
+extern Mat4x4 Mat4x4_Identity();
 //Returns product of matrix * vector, assumes vector is column vector.
-extern Vec4 mat4v4Product(Mat4x4 m, Vec4 v);
+extern Vec4 Mat4x4_v4Product(Mat4x4 m, Vec4 v);
 //Returns matrix multiplication product of a and b.
-extern Mat4x4 mat4Product(Mat4x4 a, Mat4x4 b);
+extern Mat4x4 Mat4x4_Product(Mat4x4 a, Mat4x4 b);
 //Returns transpose of m.
-extern Mat4x4 mat4Transpose(Mat4x4 m);
+extern Mat4x4 Mat4x4_Transpose(Mat4x4 m);
 
 extern Mat4x4 mat4Scale(float x, float y, float z);
 
-extern Mat4x4 mat4Translate(float x, float y, float z);
+extern Mat4x4 Mat4x4_Translate(float x, float y, float z);
 
-extern Mat4x4 mat4RotateX(float t);
+extern Mat4x4 Mat4x4_RotateX(float t);
 
-extern Mat4x4 mat4RotateY(float t);
+extern Mat4x4 Mat4x4_RotateY(float t);
 
-extern Mat4x4 mat4RotateZ(float t);
+extern Mat4x4 Mat4x4_RotateZ(float t);
 
-extern void Mat4_print(Mat4x4 m);
+extern void Mat4x4_Print(Mat4x4 m);
+
+extern Mat4x4 Mat4x4_ViewProjOrthographic(float x, float y, float z, float rotX, float rotY, float near, float far, float size);
 #endif

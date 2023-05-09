@@ -2,11 +2,15 @@
 #define _shader_h
 
 #include <glad/glad.h>
-int Shader_uniformLocations[4];
+int Shader_uniformLocations[16];
 typedef struct Shader {
 	int id;
 }
 *Shader;
+
+#define UNIFORM_DEFAULT_VERT_TRANSFORM 0
+#define UNIFORM_SHADOWMAP_VERT_TRANSFORM 1
+#define UNIFORM_SKYBOX_MATRIX 2
 
 //Shader constructor. Use relative paths to vertex/fragment shaders.
 extern Shader new_Shader(const char* vertexPath, const char* fragmentPath);
@@ -30,5 +34,6 @@ extern void Shader_setVec2(Shader shader, const char* name, float x, float y);
 
 //Set mat4 uniform
 extern void Shader_setMat4x4(Shader shader, int location, const GLfloat* value);
+//extern void Shader_setMat4x4(Shader shader, const char* name, const GLfloat* value);
 
 #endif

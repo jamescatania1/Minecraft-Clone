@@ -6,6 +6,7 @@
 #include "structures/linkedlist.h"
 #include "structures/hashmap.h"
 #include "structures/hashset.h"
+#include "math/linearalgebra.h"
 #include "math/noise.h"
 #include "shader.h"
 #include "skybox.h"
@@ -47,6 +48,17 @@ typedef struct World {
 
 	//shader shared by all chunks
 	Shader chunkShader;
+
+	//shader used for shadow map
+	Shader shadowmapShader;
+	 
+	Mat4x4 sunViewProjMatrix;
+
+	unsigned int shadowmapFBO;
+	unsigned int depthBuffer;
+	unsigned int debugQuadVAO;
+	Shader debugQuadShader;
+
 } *World;
 
 extern World new_World();
