@@ -1,22 +1,22 @@
 #version 330 core
 
 #define BLOCKFACE_TOP 0
-#define BLOCKFACE_TOP_BIAS 0.00
+#define BLOCKFACE_TOP_BIAS 0.0003
 #define BLOCKFACE_BOTTOM 1
-#define BLOCKFACE_BOTTOM_BIAS -0.1
+#define BLOCKFACE_BOTTOM_BIAS 0.000
 #define BLOCKFACE_FRONT 2
-#define BLOCKFACE_FRONT_BIAS -0.1
+#define BLOCKFACE_FRONT_BIAS -0.03
 #define BLOCKFACE_BACK 3
-#define BLOCKFACE_BACK_BIAS 0.00
+#define BLOCKFACE_BACK_BIAS 0.003
 #define BLOCKFACE_LEFT 4
-#define BLOCKFACE_LEFT_BIAS -0.05
+#define BLOCKFACE_LEFT_BIAS -0.03
 #define BLOCKFACE_RIGHT 5
-#define BLOCKFACE_RIGHT_BIAS 0.00
+#define BLOCKFACE_RIGHT_BIAS 0.003
 
 #define DISPLAY_FOG true
-#define PCF_PIXELRADIUS 2
-#define PCF_PIXELSPREADRADIUS 0.5
-#define PCF_PIXELCT 25.0
+#define PCF_PIXELRADIUS 1
+#define PCF_PIXELSPREADRADIUS 0.7
+#define PCF_PIXELCT 9
 
 out vec4 FragColor;
   
@@ -46,11 +46,11 @@ void main()
     //depth fog for far chunks
     float depth = (distance - near) / far;
     if(depth > fog_start && DISPLAY_FOG) {
-        FragColor = texture(atlas, texCoord) * vec4(color, color, color, 
+        FragColor = texture(atlas, texCoord) * vec4(vec3(1.0), 
         -depth / (fog_end - fog_start) + fog_start / (fog_end - fog_start) + 1.0);
     }
     else{
-        FragColor = texture(atlas, texCoord) * vec4(color, color, color, 1.0);
+        FragColor = texture(atlas, texCoord);
     }
     
 
@@ -69,19 +69,31 @@ void main()
     else if(face == uint(5)) bias = BLOCKFACE_RIGHT_BIAS;
 
     float shadow = 0.0;
-    vec2 texelSize = PCF_PIXELSPREADRADIUS / textureSize(shadowMap, 0);
-    for(int x = -PCF_PIXELRADIUS; x <= PCF_PIXELRADIUS; x++) //pcf filtering
-    {
-        for(int y = -PCF_PIXELRADIUS; y <= PCF_PIXELRADIUS; y++)
-        {
-            float pcfDepth = texture(shadowMap, projCoords.xy + vec2(x, y) * texelSize).r; 
-            shadow += currentDepth - bias > pcfDepth ? 1.0 : 0.0;        
-        }    
+    float finLight = color;
+    if(projCoords.z > 1.0 || projCoords.x < 0.0 || projCoords.y < 0.0 || projCoords.x > 1.0 || projCoords.y > 1.0) {
+        finLight *= color;
     }
-    shadow /= PCF_PIXELCT;
-    if(projCoords.z > 1.0) shadow = 0.0;
-
+    else{ //in shadowmapped region
+        vec2 texelSize = PCF_PIXELSPREADRADIUS / textureSize(shadowMap, 0);
+        for(int x = -PCF_PIXELRADIUS; x <= PCF_PIXELRADIUS; x++) //pcf filtering
+        {
+            for(int y = -PCF_PIXELRADIUS; y <= PCF_PIXELRADIUS; y++)
+            {
+                  for (int i = 0; i < 4; i++){ //poisson sampling
+                        vec2 sample;
+                        if(i == 0) sample = vec2( -0.94201624, -0.39906216 );
+                        else if(i == 1) sample = vec2( 0.94558609, -0.76890725 );
+                        else if(i == 2) sample = vec2( -0.094184101, -0.92938870 ); 
+                        else if(i == 3) sample = vec2( 0.34495938, 0.29387760 );
+                        
+                        float sampleDepth = texture(shadowMap, projCoords.xy + vec2(x, y) * texelSize + sample / 1500.0).r; 
+                        shadow += currentDepth - bias > sampleDepth ? 1.0 : 0.0;      
+                  }
+            }    
+        }
+        shadow /= PCF_PIXELCT * 8.0;
+    }
 
     //final fragment color
-    FragColor = vec4(FragColor.xyz * (1.0 - shadow * 0.55), 1.0);
+    FragColor = vec4(FragColor.xyz * finLight * (1.0 - shadow * 0.5), FragColor.w);
 }

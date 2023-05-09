@@ -345,24 +345,17 @@ void World_fixedupdate(World world) {
 
 void World_renderscene(World world, Shader shader, int transformUniformLocation);
 void World_draw(World world) {
-
-	glEnable(GL_DEPTH_TEST);
-	glDepthFunc(GL_LEQUAL);
-	glCullFace(GL_FRONT); //for shadow offset issues
+	//render to depth buffer from sun perspective
 	Shader_use(world->shadowmapShader);
 	glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
 	glBindFramebuffer(GL_FRAMEBUFFER, world->shadowmapFBO);
 	glClear(GL_DEPTH_BUFFER_BIT);
-
-	//render rest of scene
-	//glActiveTexture(GL_TEXTURE0);
-	//glBindTexture(GL_TEXTURE_2D, TextureAtlas_currentTexture());
 	World_renderscene(world, world->shadowmapShader, UNIFORM_SHADOWMAP_VERT_TRANSFORM);
 
+	//render rest of scene
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glViewport(0, 0, windowX, windowY);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glCullFace(GL_BACK);
 
 	//render skybox
 	glDepthFunc(GL_LEQUAL);
@@ -375,6 +368,7 @@ void World_draw(World world) {
 	glBindVertexArray(0);
 	glDepthFunc(GL_LESS);
 	
+	//render world
 	Shader_use(world->chunkShader);
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, TextureAtlas_currentTexture());
@@ -383,12 +377,12 @@ void World_draw(World world) {
 	World_renderscene(world, world->chunkShader, UNIFORM_DEFAULT_VERT_TRANSFORM);
 
 	/*
+	//view depth buffer (debugging)
 	Shader_use(world->debugQuadShader);
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, world->depthBuffer);
 	glBindVertexArray(world->debugQuadVAO);
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);*/
-	
 }
 
 void World_renderscene(World world, Shader shader, int transformUniformLocation) {

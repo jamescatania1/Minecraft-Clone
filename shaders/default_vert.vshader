@@ -46,10 +46,10 @@ void main() {
     face = (vertData >> 27u) & 0xFu;
     if (face == uint(0)) color = 1.0; //top
     else if (face == uint(1)) color = 0.6; //bottom
-    else if (face == uint(2)) color = 1.0; //front
-    else if (face == uint(3)) color = 1.0; //back
-    else if (face == uint(4)) color = 1.0; //left
-    else if (face == uint(5)) color = 1.0; //right
+    else if (face == uint(2)) color = 0.7; //front
+    else if (face == uint(3)) color = 0.95; //back
+    else if (face == uint(4)) color = 0.8; //left
+    else if (face == uint(5)) color = 0.9; //right
     else color = 1.0;
 
     distance = sqrt(gl_Position.x * gl_Position.x + gl_Position.y * gl_Position.y + gl_Position.z * gl_Position.z);
