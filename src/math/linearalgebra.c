@@ -30,7 +30,7 @@ void Vec3_free(Vec3 vector) {
 Vec4 new_Vec4(float w, float x, float y, float z) {
 	Vec4 this = (Vec4)malloc(sizeof(struct Vec4));
 	if (!this) return NULL;
-	this->w = w; this->x = x; this->y = y; this->z = z;
+	this->x = w; this->y = x; this->z = y; this->w = z;
 	return this;
 }
 void Vec4_free(Vec4 vector) {
@@ -56,7 +56,7 @@ Vec3 Vec3_cross(Vec3 a, Vec3 b) {
 	Vec3 result = new_Vec3(0.0f, 0.0f, 0.0f);
 	result->x = a->y * b->z - a->z * b->y;
 	result->y = -a->x * b->z + a->z * b->x;
-	result->z = a->x * b->y - b->y * a->x;
+	result->z = a->x * b->y - a->y * b->x;
 	return result;
 }
 float Vec3_dot(Vec3 a, Vec3 b) {
@@ -68,26 +68,26 @@ float Vec3_dot(Vec3 a, Vec3 b) {
 
 void Vec4_Normalize(Vec4 a) {
 	float mag = Vec4_magnitude(a);
-	a->w /= mag; a->x /= mag; a->y /= mag; a->z /= mag;
+	a->x /= mag; a->y /= mag; a->z /= mag; a->w /= mag;
 }
 float Vec4_magnitude(Vec4 a) {
-	return sqrtf(a->w * a->w + a->x * a->x + a->y * a->y + a->z * a->z);
+	return sqrtf(a->x * a->x + a->y * a->y + a->z * a->z + a->w * a->w);
 }
 Vec4 QuaternionMultiply(Vec4 a, Vec4 b) {
-	Vec3 v1 = new_Vec3(a->x, a->y, a->z);
-	Vec3 v2 = new_Vec3(b->x, b->y, b->z);
+	Vec3 v1 = new_Vec3(a->y, a->z, a->w);
+	Vec3 v2 = new_Vec3(b->y, b->z, b->w);
 	Vec3 cross = Vec3_cross(v1, v2);
 	Vec4 result = new_Vec4(
-		a->w * b->w - Vec3_dot(v1, v2),
-		a->w * b->x + b->w * a->x + cross->x,
-		a->w * b->y + b->w * a->y + cross->y,
-		a->w * b->z + b->w * a->z + cross->z);
+		a->x * b->x - Vec3_dot(v1, v2),
+		a->x * b->y + b->x * a->y + cross->x,
+		a->x * b->z + b->x * a->z + cross->y,
+		a->x * b->w + b->x * a->w + cross->z);
 	free(v1); free(v2); free(cross);
 	return result;
 }
 Vec4 QuaternionInverse(Vec4 a) {
-	float normsq = a->x * a->x + a->y * a->y + a->z * a->z + a->w * a->w;
-	return new_Vec4(a->w / normsq, -a->x / normsq, -a->y / normsq, -a->z / normsq);
+	float normsq = a->y * a->y + a->z * a->z + a->w * a->w + a->x * a->x;
+	return new_Vec4(a->x / normsq, -a->y / normsq, -a->z / normsq, -a->w / normsq);
 }
 
 Int2 new_Int2(int x, int y) {
@@ -109,10 +109,10 @@ Mat4x4 Mat4x4_Identity() {
 }
 Vec4 Mat4x4_v4Product(Mat4x4 m, Vec4 v) {
 	return new_Vec4(
-		m->data[0][0] * v->w + m->data[0][1] * v->x + m->data[0][2] * v->y + m->data[0][3] * v->z,
-		m->data[1][0] * v->w + m->data[1][1] * v->x + m->data[1][2] * v->y + m->data[1][3] * v->z,
-		m->data[2][0] * v->w + m->data[2][1] * v->x + m->data[2][2] * v->y + m->data[2][3] * v->z,
-		m->data[3][0] * v->w + m->data[3][1] * v->x + m->data[3][2] * v->y + m->data[3][3] * v->z
+		m->data[0][0] * v->x + m->data[0][1] * v->y + m->data[0][2] * v->z + m->data[0][3] * v->w,
+		m->data[1][0] * v->x + m->data[1][1] * v->y + m->data[1][2] * v->z + m->data[1][3] * v->w,
+		m->data[2][0] * v->x + m->data[2][1] * v->y + m->data[2][2] * v->z + m->data[2][3] * v->w,
+		m->data[3][0] * v->x + m->data[3][1] * v->y + m->data[3][2] * v->z + m->data[3][3] * v->w
 	);
 }
 Mat4x4 Mat4x4_Product(Mat4x4 a, Mat4x4 b) {
@@ -193,7 +193,7 @@ Mat4x4 Mat4x4_RotateZ(float t) {
 
 Mat4x4 Mat4x4_ViewProjOrthographic(float x, float y, float z, float rotX, float rotY, float near, float far, float size) {
 	//View Matrix
-	Mat4x4 camTr = Mat4x4_Translate(-x, -y, z);
+	Mat4x4 camTr = Mat4x4_Translate(-x, -y, -z);
 	Mat4x4 camRotX = Mat4x4_RotateX(rotX);
 	Mat4x4 camRotY = Mat4x4_RotateY(rotY - 180.0f);
 	Mat4x4 rotMatrix = Mat4x4_Product(camRotY, camRotX);
@@ -212,5 +212,54 @@ Mat4x4 Mat4x4_ViewProjOrthographic(float x, float y, float z, float rotX, float 
 	Mat4x4 result = Mat4x4_Product(viewMatrix, projMatrix);
 	free(projMatrix);
 	free(viewMatrix);
+
+	return result;
+}
+
+Mat4x4 Mat4x4_ViewProjOrthographicLookAt(float xEye, float yEye, float zEye, float xAt, float yAt, float zAt, float xUp, float yUp, float zUp, float near, float far, float size) {
+	//View Matrix
+	Vec3 zAxis = new_Vec3(xAt - xEye, yAt - yEye, zAt - zEye);
+	Vec3_normalize(zAxis);
+	Vec3 up = new_Vec3(xUp, yUp, zUp);
+	Vec3 xAxis = Vec3_cross(zAxis, up);
+	Vec3_normalize(xAxis);
+	Vec3 yAxis = Vec3_cross(xAxis, zAxis);
+	zAxis->x *= -1.0f; zAxis->y *= -1.0f; zAxis->z *= -1.0f;
+	Vec3 eye = new_Vec3(xEye, yEye, zEye);
+
+	Mat4x4 viewMatrix = new_Mat4x4();
+	viewMatrix->data[0][0] = xAxis->x;
+	viewMatrix->data[1][0] = xAxis->y;
+	viewMatrix->data[2][0] = xAxis->z;
+	viewMatrix->data[3][0] = -1.0f * Vec3_dot(xAxis, eye);
+	viewMatrix->data[0][1] = yAxis->x;
+	viewMatrix->data[1][1] = yAxis->y;
+	viewMatrix->data[2][1] = yAxis->z;
+	viewMatrix->data[3][1] = -1.0f * Vec3_dot(yAxis, eye);
+	viewMatrix->data[0][2] = zAxis->x;
+	viewMatrix->data[1][2] = zAxis->y;
+	viewMatrix->data[2][2] = zAxis->z;
+	viewMatrix->data[3][2] = -1.0f * Vec3_dot(zAxis, eye);
+	viewMatrix->data[3][3] = 1.0f;
+
+	free(xAxis);
+	free(yAxis);
+	free(zAxis);
+	free(up);
+	free(eye);
+
+	//Projection Matrix
+	Mat4x4 projMatrix = new_Mat4x4();
+
+	projMatrix->data[0][0] = 1.0f / size;
+	projMatrix->data[1][1] = 1.0f / size;
+	projMatrix->data[2][2] = -2.0f / (far - near);
+	projMatrix->data[3][2] = (-far - near) / (far - near);
+	projMatrix->data[3][3] = 1.0f;
+
+	Mat4x4 result = Mat4x4_Product(viewMatrix, projMatrix);
+	free(projMatrix);
+	free(viewMatrix);
+
 	return result;
 }

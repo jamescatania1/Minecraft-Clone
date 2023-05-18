@@ -27,6 +27,7 @@ Chunk new_Chunk() {
 	this->renderer = new_RenderComponent(NULL, 0, 0, 0, 1);
 	this->setMesh = 0;
 	this->cull = 0;
+	this->maxHeight = 0;
 
 	for (int x = 0; x < 16; x++) {
 		for (int z = 0; z < 16; z++) {
@@ -92,6 +93,7 @@ Chunk Chunk_generate(World world, int xPos, int zPos) {
 			double oceanVal = octaveNoise(world->biomeInfo[BIOME_OCEAN]->heightmap, _x, _z);
 			double groundVal = octaveNoise(world->biomeInfo[BIOME_PLAINS]->heightmap, _x, _z);
 			int height = (int)(oceanVal + (groundVal - oceanVal) * oceanBlendFactor);
+			if (height > chunk->maxHeight) chunk->maxHeight = height;
 
 			for (int y = 0; y < 256; y++) {
 				if (y < height - 10) {
@@ -110,6 +112,7 @@ Chunk Chunk_generate(World world, int xPos, int zPos) {
 			}
 		}
 	}
+	if (chunk->maxHeight < 63) chunk->maxHeight = 63;
 	return chunk;
 }
 

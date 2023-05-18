@@ -18,7 +18,7 @@ extern Vec3 new_Vec3(float x, float y, float z);
 extern void Vec3_free(Vec3 vector);
 
 typedef struct Vec4 {
-	float w, x, y, z;
+	float x, y, z, w;
 } *Vec4;
 extern Vec4 new_Vec4(float w, float x, float y, float z);
 extern void Vec4_free(Vec4 vector);
@@ -79,4 +79,6 @@ extern Mat4x4 Mat4x4_RotateZ(float t);
 extern void Mat4x4_Print(Mat4x4 m);
 
 extern Mat4x4 Mat4x4_ViewProjOrthographic(float x, float y, float z, float rotX, float rotY, float near, float far, float size);
+
+extern Mat4x4 Mat4x4_ViewProjOrthographicLookAt(float xEye, float yEye, float zEye, float xAt, float yAt, float zAt, float xUp, float yUp, float zUp, float near, float far, float size);
 #endif

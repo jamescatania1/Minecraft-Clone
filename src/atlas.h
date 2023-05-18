@@ -28,6 +28,7 @@ extern void TextureAtlas_init();
 
 extern void TextureAtlas_free();
 
+//retrieves coordinates of given block/face in format of bytes 0-5: texture index, bytes 5-7: corner index
 extern GLubyte* TextureAtlas_getFaceCoords(BLOCK_TYPE block, ATLAS_BLOCKFACE face);
 
 extern unsigned int TextureAtlas_currentTexture();

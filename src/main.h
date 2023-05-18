@@ -2,6 +2,10 @@
 #define _main_h
 
 static int RENDER_DISTANCE = 18;
+static int SHADOW_CASCADES = 3;
+static float SHADOW_CASCADE_DISTANCES[] = { 20.0f, 50.0f, 150.0f };
+static int SHADOW_CASCADE_PCF_RADIUS[] = { 1, 1, 0 };
+static float SHADOW_CASCADE_POISSON_SAMPLES[] = { 4, 0, 0 };
 
 GLFWwindow* window;
 
@@ -12,6 +16,9 @@ int windowY;
 
 //gets the current time, in miliseconds since program start
 extern long getCurrentTimeMicroseconds();
+
+//appropriately sets viewport size
+extern void setViewportSize(int width, int height);
 
 /* example time profile code:
 

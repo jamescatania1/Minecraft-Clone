@@ -27,37 +27,48 @@ void TextureAtlas_init() {
 	unsigned char* data = stbi_load("content\\atlas.png", &width, &height, &nrChannels, 0);
 	glActiveTexture(GL_TEXTURE0);
 	glGenTextures(1, &atlas);
-	glBindTexture(GL_TEXTURE_2D, atlas);
+	glBindTexture(GL_TEXTURE_2D_ARRAY, atlas);
 
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAX_LEVEL, 4);
 
-	// Disable mipmapping
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+	int xCt = width / ATLAS_CELL_WIDTH;
+	int yCt = height / ATLAS_CELL_HEIGHT;
 
-	if (data) {
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+	glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA, ATLAS_CELL_WIDTH, ATLAS_CELL_HEIGHT, xCt * yCt, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+
+	for (int i = 0; i < xCt * yCt; i++) {
+		int xOffset = (i % xCt) * ATLAS_CELL_WIDTH;
+		int yOffset = (i / yCt) * ATLAS_CELL_HEIGHT;
+
+		GLubyte pixels[ATLAS_CELL_WIDTH * ATLAS_CELL_HEIGHT * 4];
+		for (int y = 0; y < ATLAS_CELL_HEIGHT; y++) {
+			for (int x = 0; x < ATLAS_CELL_WIDTH; x++) {
+				int atlasX = xOffset + x;
+				int atlasY = yOffset + y;
+				int pixelIndex = (atlasY * width + atlasX) * 4;
+
+				pixels[(y * ATLAS_CELL_HEIGHT + x) * 4] = data[pixelIndex];
+				pixels[(y * ATLAS_CELL_HEIGHT + x) * 4 + 1] = data[pixelIndex + 1];
+				pixels[(y * ATLAS_CELL_HEIGHT + x) * 4 + 2] = data[pixelIndex + 2];
+				pixels[(y * ATLAS_CELL_HEIGHT + x) * 4 + 3] = data[pixelIndex + 3];
+			}
+		}
+
+		glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, i, 16, 16, 1, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
 	}
-	else printf("Failed to read atlas data\n");
+
+	//glGenerateMipmap(GL_TEXTURE_2D_ARRAY);
+
+	if (!data) printf("Failed to read atlas data\n");
 	free(data);
+	
 
 	//parse blockinfo file and populate blockData
 	parseBlockInfo();
-
-	/*
-	cellWidth = (float)ATLAS_CELL_WIDTH / (float)width;
-	cellHeight = (float)ATLAS_CELL_HEIGHT / (float)height;
-
-	for (int i = 0; i < 128; i++) {
-		if (!blockData[i]) continue;
-		for (int j = 0; j < 6; j++) {
-			blockData[i]->faces[j]->x *= cellWidth;
-			blockData[i]->faces[j]->y *= cellHeight;
-		}
-	}*/
 }
 
 void TextureAtlas_free() {
@@ -79,41 +90,40 @@ GLubyte* TextureAtlas_getFaceCoords(BLOCK_TYPE block, ATLAS_BLOCKFACE face) {
 
 	// if random orientation. denoting permutations in S_4 in disjoint cycle notation (zero-indexed).
 	int r = blockData[block]->faces[face]->randRotation ? rand() % 4 : 0;
-	int base_tl = 16 * blockData[block]->faces[face]->y + blockData[block]->faces[face]->x;
 	if (r == 0) {
 		//permutation ()
-		result[0] = (GLubyte)(base_tl + 0);		//top left
-		result[1] = (GLubyte)(base_tl + 1);		//top right
-		result[2] = (GLubyte)(base_tl + 17);	//bottom right
-		result[3] = (GLubyte)(base_tl + 16);	//bottom left
+		result[0] = (GLubyte)(64 * 0);	//top left
+		result[1] = (GLubyte)(64 * 1);	//top right
+		result[2] = (GLubyte)(64 * 2);	//bottom right
+		result[3] = (GLubyte)(64 * 3);	//bottom left
 	}
 	else if (r == 1) {
 		//permutation (0123)
-		result[0] = (GLubyte)(base_tl + 1);
-		result[1] = (GLubyte)(base_tl + 17);
-		result[2] = (GLubyte)(base_tl + 16);
-		result[3] = (GLubyte)(base_tl + 0);
+		result[0] = (GLubyte)(64 * 1);
+		result[1] = (GLubyte)(64 * 2);
+		result[2] = (GLubyte)(64 * 3);
+		result[3] = (GLubyte)(64 * 0);
 	}
 	else if (r == 2) {
 		//permutation (02)(13)
-		result[0] = (GLubyte)(base_tl + 17);
-		result[1] = (GLubyte)(base_tl + 16);
-		result[2] = (GLubyte)(base_tl + 0);
-		result[3] = (GLubyte)(base_tl + 1);
+		result[0] = (GLubyte)(64 * 2);
+		result[1] = (GLubyte)(64 * 3);
+		result[2] = (GLubyte)(64 * 0);
+		result[3] = (GLubyte)(64 * 1);
 	}
 	else if (r == 3) {
 		//permutation (0321)
-		result[0] = (GLubyte)(base_tl + 16);
-		result[1] = (GLubyte)(base_tl + 0);
-		result[2] = (GLubyte)(base_tl + 1);
-		result[3] = (GLubyte)(base_tl + 17);
+		result[0] = (GLubyte)(64 * 3);
+		result[1] = (GLubyte)(64 * 0);
+		result[2] = (GLubyte)(64 * 1);
+		result[3] = (GLubyte)(64 * 2);
 	}
 
 	//flip x randomly
 	r = blockData[block]->faces[face]->randFlipX ? rand() % 2 : 0;
 	if (r) {
 		//permutation (01)(23)
-		char t0 = result[0]; char t2 = result[2];
+		GLubyte t0 = result[0]; GLubyte t2 = result[2];
 		result[0] = result[1];
 		result[1] = t0;
 		result[2] = result[3];
@@ -124,12 +134,15 @@ GLubyte* TextureAtlas_getFaceCoords(BLOCK_TYPE block, ATLAS_BLOCKFACE face) {
 	r = blockData[block]->faces[face]->randFlipY ? rand() % 2 : 0;
 	if (r) { 
 		//permutation (03)(12)
-		char t0 = result[0]; char t1 = result[1];
+		GLubyte t0 = result[0]; GLubyte t1 = result[1];
 		result[0] = result[3];
 		result[3] = t0;
 		result[1] = result[2];
 		result[2] = t1;
 	}
+
+	for (int i = 0; i < 4; i++) 
+		result[i] = (GLubyte)(result[i] + 8 * blockData[block]->faces[face]->y + blockData[block]->faces[face]->x);
 
 	return result;
 }

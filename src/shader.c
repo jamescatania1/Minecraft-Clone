@@ -31,7 +31,7 @@ char* readFile(const char* filename) {
 	return buffer;
 }
 
-Shader new_Shader(const char* vertexPath, const char* fragmentPath) {
+Shader new_Shader(const char* vertexPath, const char* geometryPath, const char* fragmentPath) {
 	Shader shader = (Shader)malloc(sizeof(struct Shader));
 	if (shader == NULL) return NULL;
 
@@ -62,9 +62,25 @@ Shader new_Shader(const char* vertexPath, const char* fragmentPath) {
 		return NULL;
 	};
 
+	unsigned int geometry = 0;
+	const char* gShaderCode = NULL;
+	if (geometryPath) {
+		gShaderCode = readFile(geometryPath);
+		geometry = glCreateShader(GL_GEOMETRY_SHADER);
+		glShaderSource(geometry, 1, &gShaderCode, NULL);
+		glCompileShader(geometry);
+		glGetShaderiv(geometry, GL_COMPILE_STATUS, &success);
+		if (!success) {
+			glGetShaderInfoLog(geometry, 512, NULL, infoLog);
+			printf("geometry shader compile failed %s\n", infoLog);
+			return NULL;
+		};
+	}
+
 	//shader program
 	shader->id = glCreateProgram();
 	glAttachShader(shader->id, vertex);
+	if (geometryPath) glAttachShader(shader->id, geometry);
 	glAttachShader(shader->id, fragment);
 	glLinkProgram(shader->id);
 	glGetProgramiv(shader->id, GL_LINK_STATUS, &success);
@@ -74,10 +90,12 @@ Shader new_Shader(const char* vertexPath, const char* fragmentPath) {
 		return NULL;
 	}
 	glDeleteShader(vertex);
+	if (geometryPath) glDeleteShader(geometry);
 	glDeleteShader(fragment);
 
 	if (!shader) printf("shader is null\n");
 	free(vShaderCode);
+	if (geometryPath) free(gShaderCode);
 	free(fShaderCode);
 	return shader;
 }

@@ -19,7 +19,7 @@
 #define SCREEN_DEFAULT_WIDTH 800
 #define SCREEN_DEFAULT_HEIGHT 800
 
-void framebuffer_size_callback(GLFWwindow* window, int width, int height);
+void framebufferSizeCallback(GLFWwindow* window, int width, int height);
 void update();
 void fixedUpdate();
 void draw();
@@ -37,7 +37,7 @@ int main() {
 
 	//initialize GLFW
 	glfwInit();
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
@@ -62,8 +62,8 @@ int main() {
 	}
 
 	//set resize callback function
-	framebuffer_size_callback(window, SCREEN_DEFAULT_WIDTH, SCREEN_DEFAULT_HEIGHT);
-	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+	framebufferSizeCallback(window, SCREEN_DEFAULT_WIDTH, SCREEN_DEFAULT_HEIGHT);
+	glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
 
 	//enable depth testing, backface culling and UBOs
 	glEnable(GL_DEPTH_TEST);
@@ -159,11 +159,15 @@ void draw() {
 	World_draw(activeWorld);
 }
 
-void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
-	if (width >= height) glViewport(0, (height - width) / 2, width, width);
-	else glViewport((width - height) / 2, 0, height, height);
+void framebufferSizeCallback(GLFWwindow* window, int width, int height) {
+	setViewportSize(width, height);
 	windowX = width; windowY = height;
 	resolutionSensitivityOffset = 1.0;
+}
+
+void setViewportSize(int width, int height) {
+	if (width >= height) glViewport(0, (height - width) / 2, width, width);
+	else glViewport((width - height) / 2, 0, height, height);
 }
 
 long getCurrentTimeMicroseconds() {

@@ -52,7 +52,9 @@ typedef struct World {
 	//shader used for shadow map
 	Shader shadowmapShader;
 	 
-	Mat4x4 sunViewProjMatrix;
+	Mat4x4* sunViewProjMatrix;
+
+	int sortScheduled;
 
 	unsigned int shadowmapFBO;
 	unsigned int depthBuffer;

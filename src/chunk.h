@@ -11,6 +11,7 @@ typedef struct Chunk {
 	int posX;
 	int posZ;
 	int setMesh;
+	int maxHeight;
 	char data[16][16][256];
 	RenderComponent renderer;
 } *Chunk;

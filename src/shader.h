@@ -12,8 +12,8 @@ typedef struct Shader {
 #define UNIFORM_SHADOWMAP_VERT_TRANSFORM 1
 #define UNIFORM_SKYBOX_MATRIX 2
 
-//Shader constructor. Use relative paths to vertex/fragment shaders.
-extern Shader new_Shader(const char* vertexPath, const char* fragmentPath);
+//Shader constructor. Use relative paths to vertex/fragment shaders. Leave optional parameters NULL if necessary.
+extern Shader new_Shader(const char* vertexPath, const char* geometryPath, const char* fragmentPath);
 
 extern void Shader_free(Shader shader);
 

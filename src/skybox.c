@@ -63,7 +63,7 @@ Skybox new_Skybox() {
 	Skybox this = (Skybox)malloc(sizeof(struct Skybox));
 	if (!this) return NULL;
 
-    Shader shader = new_Shader("shaders\\skybox_vert.vshader", "shaders\\skybox_frag.fshader");
+    Shader shader = new_Shader("shaders\\skybox.vert", NULL, "shaders\\skybox.frag");
     Shader_uniformLocations[UNIFORM_SKYBOX_MATRIX] = glGetUniformLocation(shader->id, "rotProjMatrix");
     this->renderer = new_RenderComponent(shader, 0, 0, 0, 1);
 
