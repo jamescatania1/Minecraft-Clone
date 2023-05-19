@@ -91,13 +91,26 @@ World new_World() {
 	Shader_setInt(this->chunkShader, "atlas", 0);
 	Shader_setInt(this->chunkShader, "shadowMap", 1);
 	for (int i = 0; i < SHADOW_CASCADES; i++) {
-		char buffer[10];
-		snprintf(buffer, 10, "%d", i);
-		char* nameA = concat(buffer, "]");
-		char* nameFull = concat("cascadePlaneDistances[", nameA);
-		Shader_setFloat(this->chunkShader, nameFull, SHADOW_CASCADE_DISTANCES[i]);
-		Shader_setFloat(this->shadowmapShader, nameFull, SHADOW_CASCADE_DISTANCES[i]);
-		free(nameA); free(nameFull);
+		char* istring = intToString(i);
+
+		char* cascadePlaneDistances_i = concatThree("cascadePlaneDistances[", istring, "]");
+		Shader_setFloat(this->chunkShader, cascadePlaneDistances_i, SHADOW_CASCADE_DISTANCES[i]);
+		Shader_setFloat(this->shadowmapShader, cascadePlaneDistances_i, SHADOW_CASCADE_DISTANCES[i]);
+
+		char* cascadePCFPixelRadius_i = concatThree("cascadePCFPixelRadius[", istring, "]");
+		Shader_setInt(this->chunkShader, cascadePCFPixelRadius_i, SHADOW_CASCADE_PCF_PIXELRADIUS[i]);
+
+		char* cascadePCFSpreadRadius_i = concatThree("cascadePCFSpreadRadius[", istring, "]");
+		Shader_setFloat(this->chunkShader, cascadePCFSpreadRadius_i, SHADOW_CASCADE_PCF_SPREADRADIUS[i]);
+
+		char* cascadePoissonSamples_i = concatThree("cascadePoissonSamples[", istring, "]");
+		Shader_setInt(this->chunkShader, cascadePoissonSamples_i, SHADOW_CASCADE_POISSON_SAMPLES[i]);
+
+		free(cascadePlaneDistances_i);
+		free(cascadePCFPixelRadius_i);
+		free(cascadePCFSpreadRadius_i);
+		free(cascadePoissonSamples_i);
+		free(istring);
 	}
 
 	//initialize shadowmap depth buffer/fbo
@@ -327,8 +340,8 @@ void World_update(World world) {
 			}
 		}
 	}
-	for (int i = camX - 2; i <= camX + 2; i++) { //keep 25 closest chunks to camera from being culled
-		for (int j = camZ - 2; j <= camZ + 2; j++) {
+	for (int i = camX - 3; i <= camX + 3; i++) { //keep 81 closest chunks to camera from being culled
+		for (int j = camZ - 3; j <= camZ + 3; j++) {
 			Chunk c = HashMap_get(world->chunkmap, Chunk_hash_pos(i, j));
 			if (!c) continue;
 			c->cull = 0;
@@ -400,7 +413,6 @@ void World_renderscene(World world, Shader shader, int transformUniformLocation)
 void World_draw(World world) {
 	//render to depth buffer from sun perspective
 	Shader_use(world->shadowmapShader);
-	Shader_setBool(world->shadowmapShader, "minCascade", 1);
 	glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
 	glBindFramebuffer(GL_FRAMEBUFFER, world->shadowmapFBO);
 	glClear(GL_DEPTH_BUFFER_BIT);

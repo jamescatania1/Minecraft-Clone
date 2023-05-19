@@ -1,9 +1,12 @@
 #version 430 core
 
+//&GLOBAL
+#define SHADOW_CASCADES 3
+
 layout(std140) uniform Camera{
     mat4 viewMatrix;
     mat4 projMatrix;
-    mat4 sunMatrix[3];
+    mat4 sunMatrix[SHADOW_CASCADES];
     float near;
     float far;
 };
@@ -13,7 +16,7 @@ layout(location = 0) in uint vertData;
 flat out int cascade;
 
 uniform mat4 transform;
-uniform float cascadePlaneDistances[3];
+uniform float cascadePlaneDistances[SHADOW_CASCADES];
 
 void main() {
     float x = float(vertData & 0x1Fu);
@@ -27,7 +30,7 @@ void main() {
     vec4 vpos = viewMatrix * gl_Position;
     cascade = -1;
     float distance = sqrt(vpos.x * vpos.x + vpos.y * vpos.y + vpos.z * vpos.z);
-    for(int i = 0; i < 3; i++) {
+    for(int i = 0; i < SHADOW_CASCADES; i++) {
         if(distance < cascadePlaneDistances[i]) {
             cascade = i;
             break;

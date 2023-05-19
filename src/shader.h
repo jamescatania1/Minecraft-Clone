@@ -17,6 +17,9 @@ extern Shader new_Shader(const char* vertexPath, const char* geometryPath, const
 
 extern void Shader_free(Shader shader);
 
+//Sets a custom global define to be preprocessed over existing defines with "name"
+void Shader_addGlobalDefine(const char* name, const char* value);
+
 //Use the shader.
 extern void Shader_use(Shader shader);
 

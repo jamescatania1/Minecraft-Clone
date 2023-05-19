@@ -1,16 +1,20 @@
 #version 430 core
+
+//&GLOBAL
+#define SHADOW_CASCADES 3
+
 layout(location = 0) in uint vertData;
 
 layout(std140) uniform Camera{
     mat4 viewMatrix;
     mat4 projMatrix;
-    mat4 sunMatrix[3];
+    mat4 sunMatrix[SHADOW_CASCADES];
     float near;
     float far;
 };
 
 uniform mat4 transform;
-uniform float cascadePlaneDistances[3];
+uniform float cascadePlaneDistances[SHADOW_CASCADES];
 uniform sampler2DArray shadowMap;
 
 out float f_color;
@@ -19,7 +23,7 @@ out vec2 f_texCoord;
 flat out int f_texImage;
 flat out int f_cascade;
 out vec3 f_fragPos;
-out vec4 f_fragPosLightSpace[3];
+out vec4 f_fragPosLightSpace[SHADOW_CASCADES];
 flat out uint f_face;
 flat out int f_cascadeValid;
 
@@ -65,17 +69,17 @@ void main() {
 
     f_fragPos = vec3(transform * vec4(x, y, z, 1.0));
 
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < SHADOW_CASCADES; i++) {
         f_fragPosLightSpace[i] = sunMatrix[i] * vec4(f_fragPos, 1.0);
     }
 
     f_cascade = -1;
     f_cascadeValid = 1;
-    for(int i = 0; i < 3; i++) {
+    for(int i = 0; i < SHADOW_CASCADES; i++) {
         if(f_distance < cascadePlaneDistances[i]) {
             f_cascade = i;
-            if((i == 0 || f_distance > cascadePlaneDistances[i - 1] + 2.0)
-            && f_distance < cascadePlaneDistances[i] - 2.0) {
+            if((i == 0 || f_distance > cascadePlaneDistances[i - 1] + 2.5)
+            && f_distance < cascadePlaneDistances[i] - 2.5) {
                 f_cascadeValid = 1;
             }
             else f_cascadeValid = 0;

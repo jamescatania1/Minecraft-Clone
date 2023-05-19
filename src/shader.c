@@ -4,6 +4,26 @@
 #include <stdlib.h>
 #include "shader.h"
 
+//global defines are marked as:
+//&GLOBAL
+//#define DEFINE_STRING 0
+//the defined value (which has no functional purpose, just to stop intellisense errors) must be one digit,
+//while the actual define (stored in globalDefineValues) may be any char*
+static const int globalDefineCt = 16;
+const char* globalDefineStrings[16];
+const char* globalDefineValues[16];
+static const char* globalIdentifier = "GLOBAL";
+
+void Shader_addGlobalDefine(const char* name, const char* value) {
+	for (int i = 0; i < globalDefineCt; i++) {
+		if (!globalDefineStrings[i]) {
+			globalDefineStrings[i] = name;
+			globalDefineValues[i] = value;
+			break;
+		}
+	}
+}
+
 char* readFile(const char* filename) {
 	FILE* file = fopen(filename, "rb");
 	if (file == NULL) {
@@ -27,8 +47,107 @@ char* readFile(const char* filename) {
 		return NULL;
 	}
 	buffer[file_size] = '\0';
+
+	//code for preprocessing my custom global defines
+	//not by any means equipped to handle edge cases
+	int preprocessedFileSize = file_size;
+	for (int i = 0; i < file_size; i++) {
+		if (buffer[i] == '&') {
+			int validDefine = 1;
+			for (int l = 0; l < 6; l++) {
+				if (buffer[i + l + 1] != globalIdentifier[l]) {
+					validDefine = 0;
+					break;
+				}
+			}
+			if (!validDefine) continue;
+			while (buffer[i] != '#') i++;
+			while (buffer[i] != ' ') i++;
+			while (buffer[i] == ' ') i++;
+			int defineNameSize = 0;
+			while (buffer[i + defineNameSize] != ' ' && buffer[i + defineNameSize] != '\n') {
+				defineNameSize++;
+			}
+			char* defineName = (char*)malloc((defineNameSize + 1) * sizeof(char));
+			for (int j = 0; j < defineNameSize; j++) {
+				defineName[j] = buffer[i + j];
+			}
+			defineName[defineNameSize] = '\0';
+			for (int j = 0; j < globalDefineCt; j++) {
+				if (!globalDefineStrings[j]) continue;
+				if (!strcmp(globalDefineStrings[j], defineName)) {
+					preprocessedFileSize += strlen(globalDefineValues[j]) - 1;
+					break;
+				}
+			}
+			free(defineName);
+		}
+	}
+	char* pbuffer = (char*)malloc((preprocessedFileSize + 1) * sizeof(char));
+	int poffset = 0;
+	for (int i = 0; i < file_size; i++) {
+		if (buffer[i] == '&') {
+			int validDefine = 1;
+			for (int l = 0; l < 6; l++) {
+				if (buffer[i + l + 1] != globalIdentifier[l]) {
+					validDefine = 0;
+					break;
+				}
+			}
+			if (!validDefine) {
+				pbuffer[i + poffset] = buffer[i];
+				continue;
+			}
+			while (buffer[i] != '#') {
+				pbuffer[i + poffset] = buffer[i];
+				i++;
+			}
+			while (buffer[i] != ' ') {
+				pbuffer[i + poffset] = buffer[i];
+				i++;
+			}
+			while (buffer[i] == ' ') {
+				pbuffer[i + poffset] = buffer[i];
+				i++;
+			}
+			int defineNameSize = 0;
+			while (buffer[i + defineNameSize] != ' ' && buffer[i + defineNameSize] != '\n') {
+				defineNameSize++;
+			}
+			char* defineName = (char*)malloc((defineNameSize + 1) * sizeof(char));
+			for (int j = 0; j < defineNameSize; j++) {
+				defineName[j] = buffer[i + j];
+				pbuffer[i + poffset + j] = buffer[i + j];
+			}
+			i += defineNameSize;
+			while (buffer[i] == ' ') {
+				pbuffer[i + poffset] = buffer[i];
+				i++;
+			}
+
+			defineName[defineNameSize] = '\0';
+			for (int j = 0; j < globalDefineCt; j++) {
+				if (!globalDefineStrings[j]) continue;
+				if (!strcmp(globalDefineStrings[j], defineName)) {
+					int defnLen = strlen(globalDefineValues[j]);
+					for (int k = 0; k < defnLen; k++) {
+						pbuffer[i + poffset + k] = globalDefineValues[j][k];
+					}
+					//pbuffer[i + poffset ] = '\n';
+					poffset += defnLen - 1;
+					break;
+				}
+			}
+			free(defineName);
+		}
+		else {
+			pbuffer[i + poffset] = buffer[i];
+		}
+	}
+	pbuffer[preprocessedFileSize] = '\0';
 	fclose(file);
-	return buffer;
+	free(buffer);
+	return pbuffer;
 }
 
 Shader new_Shader(const char* vertexPath, const char* geometryPath, const char* fragmentPath) {

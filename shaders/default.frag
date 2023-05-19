@@ -1,5 +1,8 @@
 #version 430 core
 
+//&GLOBAL
+#define SHADOW_CASCADES 1
+
 #define BLOCKFACE_TOP 0
 #define BLOCKFACE_TOP_BIAS 0.0003
 #define BLOCKFACE_BOTTOM 1
@@ -26,31 +29,34 @@ flat in int f_texImage;
 flat in int f_cascade;
 in float f_distance;
 in vec3 f_fragPos;
-in vec4 f_fragPosLightSpace[3];
+in vec4 f_fragPosLightSpace[SHADOW_CASCADES];
 flat in uint f_face;
 flat in int f_cascadeValid;
 
 layout(std140) uniform Camera{
     mat4 viewMatrix;
     mat4 projMatrix;
-    mat4 sunMatrix[3];
+    mat4 sunMatrix[SHADOW_CASCADES];
     float near;
     float far;
 };
 
 uniform sampler2DArray atlas;
 uniform sampler2DArray shadowMap;
-uniform float cascadePlaneDistances[3];
+uniform float cascadePlaneDistances[SHADOW_CASCADES];
+uniform int cascadePCFPixelRadius[SHADOW_CASCADES];
+uniform float cascadePCFSpreadRadius[SHADOW_CASCADES];
+uniform int cascadePoissonSamples[SHADOW_CASCADES];
 
 float fog_start = 0.85;
 float fog_end = 0.96;
 
-float sampleShadowmap(vec3 projCoords[3], float bias, vec2 offset) {
+float sampleShadowmap(vec3 projCoords[SHADOW_CASCADES], float bias, vec2 offset) {
     if(f_cascadeValid == 1) {
         float sampleDepth = texture(shadowMap, vec3(projCoords[f_cascade].xy + offset, f_cascade)).r;
         return projCoords[f_cascade].z - bias > sampleDepth ? 1.0 : 0.0;
     }
-    for (int i = 0; i < 3; i++) { //in ambiguous cascade level region, sample all cascades
+    for (int i = 0; i < SHADOW_CASCADES; i++) { //in ambiguous cascade level region, sample all cascades
         float sampleDepth = texture(shadowMap, vec3(projCoords[i].xy + offset, i)).r;
         if (projCoords[i].z - bias > sampleDepth) {
             return 1.0;
@@ -72,8 +78,8 @@ void main()
     }
     else {
         //sample shadowmap
-        vec3 projCoords[3];
-        for(int i = 0; i < 3; i++) {
+        vec3 projCoords[SHADOW_CASCADES];
+        for(int i = 0; i < SHADOW_CASCADES; i++) {
             projCoords[i] = f_fragPosLightSpace[i].xyz / f_fragPosLightSpace[i].w;
             projCoords[i] = projCoords[i] * 0.5 + 0.5;
         }
@@ -86,15 +92,18 @@ void main()
         else if(f_face == uint(4)) bias = BLOCKFACE_LEFT_BIAS;
         else if(f_face == uint(5)) bias = BLOCKFACE_RIGHT_BIAS;
 
-        if (f_cascade == 0){ //in shadowmapped region that will be filtered (first cascade in this instance)
-
+        if (cascadePCFPixelRadius[f_cascade] == 0) { //in shadowmapped region that will not be filtered (>=2nd cascades in this instance)
+            shadow = sampleShadowmap(projCoords, bias, vec2(0.0));
+        }
+        else { //in shadowmapped region that will be filtered (first cascade in this instance)
             //using PCF filtering
-            vec2 texelSize = PCF_PIXELSPREADRADIUS / vec2(2048.0, 2048.0);
-            for(int x = -PCF_PIXELRADIUS; x <= PCF_PIXELRADIUS; x++) //pcf filtering
+            int pcfPixelRadius = cascadePCFPixelRadius[f_cascade];
+            vec2 texelSize = cascadePCFSpreadRadius[f_cascade] / vec2(2048.0, 2048.0);
+            for(int x = -pcfPixelRadius; x <= pcfPixelRadius; x++) //pcf filtering
             {
-                for(int y = -PCF_PIXELRADIUS; y <= PCF_PIXELRADIUS; y++)
+                for(int y = -pcfPixelRadius; y <= pcfPixelRadius; y++)
                 {
-                      for (int i = 0; i < 4; i++){ //poisson sampling
+                      for (int i = 0; i < cascadePoissonSamples[f_cascade]; i++){ //poisson sampling
                             vec2 poisSample;
                             if(i == 0) poisSample = vec2( -0.94201624, -0.39906216 );
                             else if(i == 1) poisSample = vec2( 0.94558609, -0.76890725 );
@@ -104,14 +113,14 @@ void main()
                             //float sampleDepth = sampleShadowmap(vec2(projCoords.xy + vec2(x, y) * texelSize + poisSample / 1500.0), f_cascade);         
                             shadow += sampleShadowmap(projCoords, bias, vec2(x, y) * texelSize + poisSample / 1500.0);
                       }
-                }    
+                      if (cascadePoissonSamples[f_cascade] == 0) {
+                            shadow += sampleShadowmap(projCoords, bias, vec2(x, y) * texelSize);
+                      }
+                }
             }
-            shadow /= PCF_PIXELCT * 4.0;        
+            shadow /= (pcfPixelRadius * 2.0 + 1.0) * (pcfPixelRadius * 2.0 + 1.0) * max(cascadePoissonSamples[f_cascade], 1.0);        
         }
-        else { //in shadowmapped region that will not be filtered (>=2nd cascades in this instance)
-            shadow = sampleShadowmap(projCoords, bias, vec2(0.0));
-        }
-
+        
         //visualize cascades (debugging)
         //if(cascade == 0) FragColor = vec4(1.0, 0.0, 0.0, 1.0);
         //if(cascade == 1) FragColor = vec4(0.0, 1.0, 0.0, 1.0);

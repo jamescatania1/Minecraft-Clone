@@ -40,6 +40,7 @@ int main() {
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+	glfwWindowHint(GLFW_SAMPLES, 4);
 
 	//create GLFW window
 	window = glfwCreateWindow(SCREEN_DEFAULT_WIDTH, SCREEN_DEFAULT_HEIGHT, "\"Minecraft\"", NULL, NULL);
@@ -72,6 +73,11 @@ int main() {
 	glEnable(GL_UNIFORM_BUFFER);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glEnable(GL_BLEND);
+	glEnable(GL_MULTISAMPLE);
+
+	char shadow_cascadesString[8];
+	sprintf(shadow_cascadesString, "%d", SHADOW_CASCADES);
+	Shader_addGlobalDefine("SHADOW_CASCADES", shadow_cascadesString);
 
 	//initialize input manager
 	InputManager_init();
