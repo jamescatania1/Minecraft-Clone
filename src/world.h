@@ -28,6 +28,14 @@ typedef struct World {
 
 	OctaveNoise oceanMap;
 
+	OctaveNoise treeMap;
+
+	OctaveNoise treeMapOffsetsX;
+
+	OctaveNoise treeMapOffsetsZ;
+	
+	OctaveNoise treeHeightMap;
+
 	//main list of all currently loaded chunks
 	List chunks;
 

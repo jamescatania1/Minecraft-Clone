@@ -61,11 +61,6 @@ int Chunk_hash(Chunk c) {
 	return Chunk_hash_pos(c->posX, c->posZ);
 }
 int Chunk_hash_pos(int x, int z) {
-	/*
-	int hashX = (unsigned short)x * 2 - (x < 0 ? 1 : 0);
-	int hashY = (unsigned short)z * 2 - (z < 0 ? 1 : 0);
-	unsigned int hash = (unsigned int)((unsigned short)hashX << 16) | (unsigned short)(hashY);*/
-
 	int a = (x >= 0 ? 2 * x : -2 * x - 1);
 	int b = (z >= 0 ? 2 * z : -2 * z - 1);
 	return ((a + b) * (a + b + 1) / 2 + b);
@@ -88,6 +83,10 @@ Chunk Chunk_generate(World world, int xPos, int zPos) {
 			double _x = (double)(x + 16 * xPos); 
 			double _z = (double)(z + 16 * zPos);
 			double oceanMapVal = octaveNoise(world->oceanMap, _x, _z);
+			double treeMapVal = octaveNoise(world->treeMap, _x, _z);
+			int treeMapOffsetX = (int)octaveNoise(world->treeMapOffsetsX, _x, _z);
+			int treeMapOffsetZ = (int)octaveNoise(world->treeMapOffsetsZ, _x, _z);
+			double treeHeightMapVal = octaveNoise(world->treeHeightMap, _x, _z);
 			double oceanBlendFactor = atan(90.0 * (oceanMapVal - 0.3)) * 1.02 / M_PI + 0.51;
 			oceanBlendFactor = fmin(1.0, fmax(0.0, oceanBlendFactor));
 			double oceanVal = octaveNoise(world->biomeInfo[BIOME_OCEAN]->heightmap, _x, _z);
@@ -108,12 +107,23 @@ Chunk Chunk_generate(World world, int xPos, int zPos) {
 					if (oceanMapVal < 0.3025 || (oceanMapVal >= 0.3025 && y < 62)) chunk->data[x][z][y] = (char)BLOCK_STONE;
 					else if (oceanMapVal < 0.34 || y < 66) chunk->data[x][z][y] = (char)BLOCK_SAND;
 					else chunk->data[x][z][y] = (char)BLOCK_GRASS;
+					if ((x + 16 * xPos + treeMapOffsetX) % 4 == 0 && (z + 16 * zPos + treeMapOffsetZ) % 4 == 0 && treeMapVal > 0.0) {
+						//add tree
+						for (int k = 1; k < (int)treeHeightMapVal; k++) {
+							chunk->data[x][z][y + k] = (char)BLOCK_OAK;
+						}
+					}
 				}
+
 			}
 		}
 	}
 	if (chunk->maxHeight < 63) chunk->maxHeight = 63;
 	return chunk;
+}
+
+inline void addTree(Chunk chunk, int x, int z) {
+
 }
 
 void Chunk_updatemesh(Chunk chunk, Chunk neighboringData[4]) {

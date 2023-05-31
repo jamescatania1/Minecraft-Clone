@@ -12,5 +12,6 @@
 #define BLOCK_STONE 3
 #define BLOCK_WATER 4
 #define BLOCK_SAND 5
+#define BLOCK_OAK 6
 
 #endif

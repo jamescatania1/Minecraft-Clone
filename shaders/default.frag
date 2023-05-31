@@ -2,6 +2,10 @@
 
 //&GLOBAL
 #define SHADOW_CASCADES 1
+//&GLOBAL
+#define SHADOW_WIDTH 1
+//&GLOBAL
+#define SHADOW_HEIGHT 1
 
 #define BLOCKFACE_TOP 0
 #define BLOCKFACE_TOP_BIAS 0.0003
@@ -98,7 +102,7 @@ void main()
         else { //in shadowmapped region that will be filtered (first cascade in this instance)
             //using PCF filtering
             int pcfPixelRadius = cascadePCFPixelRadius[f_cascade];
-            vec2 texelSize = cascadePCFSpreadRadius[f_cascade] / vec2(2048.0, 2048.0);
+            vec2 texelSize = cascadePCFSpreadRadius[f_cascade] / vec2(SHADOW_WIDTH, SHADOW_HEIGHT);
             for(int x = -pcfPixelRadius; x <= pcfPixelRadius; x++) //pcf filtering
             {
                 for(int y = -pcfPixelRadius; y <= pcfPixelRadius; y++)
@@ -118,7 +122,8 @@ void main()
                       }
                 }
             }
-            shadow /= (pcfPixelRadius * 2.0 + 1.0) * (pcfPixelRadius * 2.0 + 1.0) * max(cascadePoissonSamples[f_cascade], 1.0);        
+            if(cascadePoissonSamples[f_cascade] == 0) shadow /= (pcfPixelRadius * 2.0 + 1.0) * (pcfPixelRadius * 2.0 + 1.0);
+            else shadow /= (pcfPixelRadius * 2.0 + 1.0) * (pcfPixelRadius * 2.0 + 1.0) * cascadePoissonSamples[f_cascade];       
         }
         
         //visualize cascades (debugging)

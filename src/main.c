@@ -78,6 +78,11 @@ int main() {
 	char shadow_cascadesString[8];
 	sprintf(shadow_cascadesString, "%d", SHADOW_CASCADES);
 	Shader_addGlobalDefine("SHADOW_CASCADES", shadow_cascadesString);
+	char shadow_widthString[8], shadow_heightString[8];
+	sprintf(shadow_widthString, "%d", SHADOW_WIDTH);
+	sprintf(shadow_heightString, "%d", SHADOW_HEIGHT);
+	Shader_addGlobalDefine("SHADOW_WIDTH", shadow_widthString);
+	Shader_addGlobalDefine("SHADOW_HEIGHT", shadow_heightString);
 
 	//initialize input manager
 	InputManager_init();

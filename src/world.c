@@ -27,9 +27,6 @@
 #define LOCK_CURSOR_DEFAULT 1
 #define FRUSTUM_CULLING 1
 
-#define SHADOW_WIDTH 2048
-#define SHADOW_HEIGHT 2048
-
 int cursorLocked;
 int prevCamX;
 int prevCamZ;
@@ -71,6 +68,14 @@ World new_World() {
 	OctaveNoise_setseed(SEED_INPUT);
 	
 	this->oceanMap = new_OctaveNoise(1.0, 0.0015, 0.0, 5, 0.3, 2.2);
+
+	this->treeMap = new_OctaveNoise(1.0, 1.0, 0.0, 1, 0.5, 2.0);
+
+	this->treeMapOffsetsX = new_OctaveNoise(3.0, 0.14, -1.5, 1, 0.5, 2.0);
+
+	this->treeMapOffsetsZ = new_OctaveNoise(3.0, 0.14, -1.5, 1, 0.5, 2.0);
+
+	this->treeHeightMap = new_OctaveNoise(3.0, 0.01, 4.5, 1, 0.5, 2.0);
 
 	//ocean biome
 	this->biomeInfo[BIOME_OCEAN] = new_BiomeInfo(new_OctaveNoise(23.0, 0.015, 15.0, 4, 0.7, 1.8));
@@ -209,6 +214,8 @@ void World_free(World world) {
 	TextureAtlas_free();
 	for (int i = 0; i < 3; i++) BiomeInfo_free(world->biomeInfo[i]);
 	OctaveNoise_free(world->oceanMap);
+	OctaveNoise_free(world->treeMap);
+	OctaveNoise_free(world->treeHeightMap);
 	free(world);
 }
 
